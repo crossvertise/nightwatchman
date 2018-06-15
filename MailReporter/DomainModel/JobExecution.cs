@@ -8,6 +8,8 @@ namespace DomainModel
     {
         public string Id { get; set; }
 
+        public Tuple<string,string> Job { get; set; }
+
         public DateTime? Started { get; set; }
 
         public DateTime Finished { get; set; }
@@ -19,5 +21,7 @@ namespace DomainModel
         public JobExecutionStatus Status { get; set; }
 
         public string ErrorSummary { get; set; }
+
+        public NotificationEmail NotificationEmail { get; set; }
     }
 }

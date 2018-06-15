@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using BusinessLogic;
 using DomainModel;
 using Mandrill.Models;
 using Microsoft.Azure.WebJobs;
@@ -39,15 +40,25 @@ namespace MailReporter
                 return req.CreateResponse(HttpStatusCode.BadRequest, "No valid JSON found");
             }
 
+            var mailLoggingService = new MailLoggingService();
+
             foreach (var webhookEvent in webhookEvents)
             {
-                var jobExecution = new JobExecution
+                var msg = webhookEvent.Msg;
+                var mail = new NotificationEmail
                 {
-                    Finished = DateTime.UtcNow,
+                    Sender = msg.FromEmail,
+                    //Recipient = msg.
+                    Subject = msg.Subject,
 
-                    Status = JobExecutionStatus.Success
+                    BodyHtml = msg.Html,
+                    BodyText = msg.Text,
                 };
-                
+
+                var jobExecution = await mailLoggingService.ConvertMailToJobExecution(mail);
+
+                await mailLoggingService.SaveJobExecution(jobExecution);
+
             }
 
             return req.CreateResponse(HttpStatusCode.OK, "Event processed successfully");

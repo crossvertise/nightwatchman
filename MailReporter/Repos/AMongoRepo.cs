@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using MongoDB.Driver;
 
 namespace Repos
@@ -20,9 +21,22 @@ namespace Repos
             Collection = Database.GetCollection<T>(nameof(T));
         }
 
-        public void Create(T item)
+        public async Task Create(T item)
         {
-            Collection.InsertOne(item);
+            await Collection.InsertOneAsync(item);
+        }
+
+        public async Task<T> GetById(string id)
+        {
+            var filter = Builders<T>.Filter.Eq("id", id);
+            var result = await Collection.Find(filter).FirstOrDefaultAsync();
+            return result;
+        }
+
+        public async Task<ICollection<T>> GetAll()
+        {
+            var result = await Collection.Find(x => true).ToListAsync();
+            return result;
         }
     }
 }
