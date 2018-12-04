@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Repos;
+using System.Text.RegularExpressions;
 
 namespace BusinessLogic
 {
@@ -13,23 +14,44 @@ namespace BusinessLogic
 
         public JobRepo JobRepo { get; set; }
 
+        public MailLoggingService(string mongoDbConnectionString, string mongoDbDatabaseName)
+        {
+            JobExecutionRepo = new JobExecutionRepo(mongoDbConnectionString, mongoDbDatabaseName);
+            JobRepo = new JobRepo(mongoDbConnectionString, mongoDbDatabaseName);
+        }
 
         public async Task<JobExecution> ConvertMailToJobExecution(NotificationEmail mail)
         {
-            var allJobs = await JobRepo.GetAll();
+            //var allJobs = await JobRepo.GetAll();
+            var allJobs = new List<Job>
+            {
+                new Job {Name = "Cinema ETL Live", SubjectRegex = "[Live] Cinema ETL"},
+                new Job {Name = "OOH ETL Live", SubjectRegex = "OOH ETL Live"},
+                new Job {Name = "Online ETL", SubjectRegex = "'Update Online'"},
+                new Job {Name = "Radio ETL", SubjectRegex = "'Update Radio'"},
+                new Job {Name = "Print ETL", SubjectRegex = "'Update Print'"},
+                new Job {Name = "XV Routines", SubjectRegex = "'Xv Routines'"},
+                new Job {Name = "Import MSW Online Data", SubjectRegex = "'Import MSW Online Data'"},
+                new Job {Name = "Full Text Search Index", SubjectRegex = "[Xv.WebJobs.FullTextSearch][Live]"},
+            };
 
             // Determine matching job
             Job job = null;
+            // match by sender email address
             if (!string.IsNullOrWhiteSpace(mail.Sender))
             {
-                job = allJobs.FirstOrDefault(j => j.EmailSender.Equals(mail.Sender.Trim(), StringComparison.InvariantCultureIgnoreCase));
+                job = allJobs.Where(j => j.EmailSender != null).FirstOrDefault(j => j.EmailSender.Equals(mail.Sender.Trim(), StringComparison.InvariantCultureIgnoreCase));
             }
-
-            var jobRef = job != null ? new Tuple<string, string>(job.Id, job.Name) : new Tuple<string, string>("", "");
+            // Match by subject regex
+            if (job == null)
+            {
+                job = allJobs.Where(j => j.SubjectRegex != null).FirstOrDefault(j => Regex.IsMatch(mail.Subject, j.SubjectRegex));
+            }
 
             var jobExecution = new JobExecution
             {
-                Job = jobRef,
+                JobId = job.Id,
+                JobName = job.Name,
                 OriginalBody = mail.BodyHtml,
                 OriginalSubject = mail.Subject,
                 NotificationEmail = mail,
@@ -62,6 +84,11 @@ namespace BusinessLogic
         public async Task SaveJobExecution(JobExecution jobExecution)
         {
             await JobExecutionRepo.Create(jobExecution);
+        }
+
+        public async Task SeedJobs()
+        {
+
         }
     }
 }

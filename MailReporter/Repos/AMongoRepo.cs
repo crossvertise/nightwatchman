@@ -13,12 +13,21 @@ namespace Repos
         internal IMongoDatabase Database { get; set; }
 
         internal IMongoCollection<T> Collection { get; set; }
-        protected AMongoRepo()
-        {
+
+        //protected AMongoRepo()
+        //{
             
-            Client = new MongoClient();
-            Database = Client.GetDatabase("asd");
-            Collection = Database.GetCollection<T>(nameof(T));
+        //    Client = new MongoClient();
+        //    Database = Client.GetDatabase("asd");
+        //    Collection = Database.GetCollection<T>(nameof(T));
+        //}
+
+        protected AMongoRepo(string connectionString, string databaseName)
+        {
+
+            Client = new MongoClient(connectionString);
+            Database = Client.GetDatabase(databaseName);
+            Collection = Database.GetCollection<T>(typeof(T).Name);
         }
 
         public async Task Create(T item)

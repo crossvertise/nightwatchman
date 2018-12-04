@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -17,50 +18,61 @@ namespace MailReporter
     public static class MailReporter
     {
         [FunctionName("MailReporter")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", "head", Route = null)]HttpRequestMessage req, TraceWriter log)
         {
-            log.Info("C# HTTP trigger function processed a request.");
+            log.Info($"C# HTTP trigger function processed a request. HTTP Method: {req.Method}");
 
-            // parse query parameter
-            string name = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, "name", true) == 0)
-                .Value;
-
-            var content = await req.Content.ReadAsStringAsync();
-            var validJson = content.Replace("mandrill_events=", string.Empty);
-
-            if (string.IsNullOrWhiteSpace(validJson))
+            try
             {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "No valid JSON found");
-            }
-
-            var webhookEvents = JsonConvert.DeserializeObject<List<WebHookEvent>>(validJson);
-            if (webhookEvents == null)
-            {
-                return req.CreateResponse(HttpStatusCode.BadRequest, "No valid JSON found");
-            }
-
-            var mailLoggingService = new MailLoggingService();
-
-            foreach (var webhookEvent in webhookEvents)
-            {
-                var msg = webhookEvent.Msg;
-                var mail = new NotificationEmail
+                if (req.Method == HttpMethod.Head)
                 {
-                    Sender = msg.FromEmail,
-                    //Recipient = msg.
-                    Subject = msg.Subject,
+                    return req.CreateResponse(HttpStatusCode.OK);
+                }
 
-                    BodyHtml = msg.Html,
-                    BodyText = msg.Text,
-                };
+                var content = await req.Content.ReadAsFormDataAsync();
+                var validJson = content["mandrill_events"].Replace("mandrill_events =", string.Empty);
 
-                var jobExecution = await mailLoggingService.ConvertMailToJobExecution(mail);
+                if (string.IsNullOrWhiteSpace(validJson))
+                {
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "No valid JSON found");
+                }
 
-                await mailLoggingService.SaveJobExecution(jobExecution);
+                var webhookEvents = JsonConvert.DeserializeObject<List<WebHookEvent>>(validJson);
+                if (webhookEvents == null)
+                {
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "No webhook events found");
+                }
+                log.Info($"Processing {webhookEvents.Count} event(s)...");
 
+                var connectionString = ConfigurationManager.AppSettings["MongoDbConnectionString"];
+                var databaseName = ConfigurationManager.AppSettings["MongoDbDatabaseName"];
+                var mailLoggingService = new MailLoggingService(connectionString, databaseName);
+
+                foreach (var webhookEvent in webhookEvents)
+                {
+                    var msg = webhookEvent.Msg;
+                    var mail = new NotificationEmail
+                    {
+                        Sender = msg.FromEmail,
+                        //Recipient = msg.
+                        Subject = msg.Subject,
+
+                        BodyHtml = msg.Html,
+                        BodyText = msg.Text,
+                    };
+
+                    var jobExecution = await mailLoggingService.ConvertMailToJobExecution(mail);
+                    log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
+
+                    await mailLoggingService.SaveJobExecution(jobExecution);
+
+                }
             }
-
+            catch(Exception e)
+            {
+                log.Error(e.Message + "\r\n" + e.StackTrace);
+                throw e;
+            }
             return req.CreateResponse(HttpStatusCode.OK, "Event processed successfully");
         }
         

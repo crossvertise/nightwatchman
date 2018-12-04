@@ -1,14 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
 
 namespace DomainModel
 {
     public class JobExecution
     {
+        [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]
         public string Id { get; set; }
 
-        public Tuple<string,string> Job { get; set; }
+        public string JobId { get; set; }
+
+        public string JobName { get; set; }
 
         public DateTime? Started { get; set; }
 
