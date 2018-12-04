@@ -8,11 +8,11 @@ namespace Repos
 {
     public abstract class AMongoRepo<T>
     {
-        internal IMongoClient Client { get; set; }
+        protected IMongoClient Client { get; set; }
 
-        internal IMongoDatabase Database { get; set; }
+        protected IMongoDatabase Database { get; set; }
 
-        internal IMongoCollection<T> Collection { get; set; }
+        protected IMongoCollection<T> Collection { get; set; }
 
         //protected AMongoRepo()
         //{

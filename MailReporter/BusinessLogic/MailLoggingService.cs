@@ -17,35 +17,31 @@ namespace BusinessLogic
         public MailLoggingService(string mongoDbConnectionString, string mongoDbDatabaseName)
         {
             JobExecutionRepo = new JobExecutionRepo(mongoDbConnectionString, mongoDbDatabaseName);
-            JobRepo = new JobRepo(mongoDbConnectionString, mongoDbDatabaseName);
+            JobRepo = new JobRepo(); //(mongoDbConnectionString, mongoDbDatabaseName);
         }
 
-        public async Task<JobExecution> ConvertMailToJobExecution(NotificationEmail mail)
+        public JobExecution ConvertMailToJobExecution(NotificationEmail mail)
         {
-            //var allJobs = await JobRepo.GetAll();
-            var allJobs = new List<Job>
-            {
-                new Job {Name = "Cinema ETL Live", SubjectRegex = "[Live] Cinema ETL"},
-                new Job {Name = "OOH ETL Live", SubjectRegex = "OOH ETL Live"},
-                new Job {Name = "Online ETL", SubjectRegex = "'Update Online'"},
-                new Job {Name = "Radio ETL", SubjectRegex = "'Update Radio'"},
-                new Job {Name = "Print ETL", SubjectRegex = "'Update Print'"},
-                new Job {Name = "XV Routines", SubjectRegex = "'Xv Routines'"},
-                new Job {Name = "Import MSW Online Data", SubjectRegex = "'Import MSW Online Data'"},
-                new Job {Name = "Full Text Search Index", SubjectRegex = "[Xv.WebJobs.FullTextSearch][Live]"},
-            };
+            var allJobs = JobRepo.GetAll();
 
             // Determine matching job
             Job job = null;
+
             // match by sender email address
             if (!string.IsNullOrWhiteSpace(mail.Sender))
             {
                 job = allJobs.Where(j => j.EmailSender != null).FirstOrDefault(j => j.EmailSender.Equals(mail.Sender.Trim(), StringComparison.InvariantCultureIgnoreCase));
             }
+
             // Match by subject regex
             if (job == null)
             {
                 job = allJobs.Where(j => j.SubjectRegex != null).FirstOrDefault(j => Regex.IsMatch(mail.Subject, j.SubjectRegex));
+            }
+
+            if(job == null)
+            {
+                job = new Job { Name = "Unknown" };
             }
 
             var jobExecution = new JobExecution
@@ -62,7 +58,7 @@ namespace BusinessLogic
 
             // determine the status
             var errorWords = new List<string> {"failed", "error", "unsuccessful", "fehlgeschlagen", "fehler", "gescheitert", "nicht erfolgreich"};
-            var successWords = new List<string> { "success", "succeeded", "completed", "erfolgreich", "abgeschlossed" };
+            var successWords = new List<string> { "success", "succeeded", "completed", "erfolgreich", "abgeschlossed", "erfolg" };
             if (errorWords.Any(e => mail.Subject.ToLowerInvariant().Contains(e)))
             {
                 jobExecution.Status = JobExecutionStatus.Error;
@@ -84,11 +80,6 @@ namespace BusinessLogic
         public async Task SaveJobExecution(JobExecution jobExecution)
         {
             await JobExecutionRepo.Create(jobExecution);
-        }
-
-        public async Task SeedJobs()
-        {
-
         }
     }
 }

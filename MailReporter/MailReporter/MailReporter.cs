@@ -61,7 +61,7 @@ namespace MailReporter
                         BodyText = msg.Text,
                     };
 
-                    var jobExecution = await mailLoggingService.ConvertMailToJobExecution(mail);
+                    var jobExecution = mailLoggingService.ConvertMailToJobExecution(mail);
                     log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
 
                     await mailLoggingService.SaveJobExecution(jobExecution);

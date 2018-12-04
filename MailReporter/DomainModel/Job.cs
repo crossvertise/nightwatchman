@@ -24,7 +24,7 @@ namespace DomainModel
 
         public string ErrorBodyRegex { get; set; }
 
-        public string ExpectedSchedule { get; set; }
+        public TimeSpan ExpectedInterval { get; set; }
 
     }
 }
