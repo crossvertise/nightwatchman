@@ -36,10 +36,26 @@ namespace BusinessLogic
             // Match by subject regex
             if (job == null)
             {
-                job = allJobs.Where(j => j.SubjectRegex != null).FirstOrDefault(j => Regex.IsMatch(mail.Subject, j.SubjectRegex));
+                var jobs = allJobs.Where(j => string.IsNullOrWhiteSpace(j.SubjectRegex) && Regex.IsMatch(mail.Subject, j.SubjectRegex));
+                if(jobs.Count() > 1)
+                {
+                    job = new Job { Name = "Ambiguous Subject RegEx: " + string.Join(" ,", jobs.Select(j => j.Name))};
+                }
+                job = jobs.FirstOrDefault();
             }
 
-            if(job == null)
+            // Match by subject contains
+            if (job == null)
+            {
+                var jobs = allJobs.Where(j => string.IsNullOrWhiteSpace(j.SubjectContains) && mail.Subject.Contains(j.SubjectContains));
+                if (jobs.Count() > 1)
+                {
+                    job = new Job { Name = "Ambiguous Subject Contains: " + string.Join(" ,", jobs.Select(j => j.Name)) };
+                }
+                job = jobs.FirstOrDefault();
+            }
+
+            if (job == null)
             {
                 job = new Job { Name = "Unknown" };
             }
@@ -59,18 +75,38 @@ namespace BusinessLogic
             // determine the status
             var errorWords = new List<string> {"failed", "error", "unsuccessful", "fehlgeschlagen", "fehler", "gescheitert", "nicht erfolgreich"};
             var successWords = new List<string> { "success", "succeeded", "completed", "erfolgreich", "abgeschlossed", "erfolg" };
-            if (errorWords.Any(e => mail.Subject.ToLowerInvariant().Contains(e)))
+
+            if(job.ErrorSubjectRegex != null && job.SuccessSubjectRegex != null)
             {
-                jobExecution.Status = JobExecutionStatus.Error;
-            }
-            else if(successWords.Any(s => mail.Subject.ToLowerInvariant().Contains(s)))
-            {
-                jobExecution.Status = JobExecutionStatus.Success;
+                if (job.ErrorSubjectRegex != null && Regex.IsMatch(mail.Subject, job.ErrorSubjectRegex))
+                {
+                    jobExecution.Status = JobExecutionStatus.Error;
+                }
+                else if(job.ErrorSubjectRegex != null && Regex.IsMatch(mail.Subject, job.SuccessSubjectRegex))
+                {
+                    jobExecution.Status = JobExecutionStatus.Success;
+                }
+                else
+                {
+                    jobExecution.Status = JobExecutionStatus.Unknown;
+                }
             }
             else
             {
-                jobExecution.Status = JobExecutionStatus.Unknown;
+                if (errorWords.Any(e => mail.Subject.ToLowerInvariant().Contains(e)))
+                {
+                    jobExecution.Status = JobExecutionStatus.Error;
+                }
+                else if (successWords.Any(s => mail.Subject.ToLowerInvariant().Contains(s)))
+                {
+                    jobExecution.Status = JobExecutionStatus.Success;
+                }
+                else
+                {
+                    jobExecution.Status = JobExecutionStatus.Unknown;
+                }
             }
+            
 
             return jobExecution;
         }

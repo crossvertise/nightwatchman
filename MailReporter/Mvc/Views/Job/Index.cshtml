@@ -1,0 +1,25 @@
+﻿@model IEnumerable<DomainModel.DTO.JobOverview>
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h2>Job Overwiew</h2>
+
+<div class="row"></div>
+@foreach(var job in Model) {
+    var status = job.LastStatus == DomainModel.JobExecutionStatus.Success ? "panel-success" : job.LastStatus == DomainModel.JobExecutionStatus.Error ? "panel-danger" : "panel-default";
+    <div class="col-lg-2 col-md-3 col-sm-6">
+        <div class="panel @status">
+            <div class="panel-heading">@job.Job.Name</div>
+            <div class="panel-body">
+                Last run: @job.LastRun <br />
+                Next run: @job.NextRun <br />
+                Is Due: @job.IsDue
+            </div>
+            
+            <div class="panel-footer @status">Status @job.LastStatus</div>
+        </div>
+    </div>
+}
+
+

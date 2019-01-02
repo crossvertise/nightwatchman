@@ -4,11 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DomainModel.DTO;
+using Microsoft.Extensions.Configuration;
 using Repos;
 
 namespace BusinessLogic
 {
-    public class JobStatusService
+    public interface IJobStatusService
+    {
+        Task<IEnumerable<JobOverview>> GetOverview();
+    }
+
+    public class JobStatusService : IJobStatusService
     {
         public JobExecutionRepo JobExecutionRepo { get; set; }
 
@@ -18,6 +24,11 @@ namespace BusinessLogic
         {
             JobExecutionRepo = new JobExecutionRepo(mongoDbConnectionString, mongoDbDatabaseName);
             JobRepo = new JobRepo(); //(mongoDbConnectionString, mongoDbDatabaseName);
+        }
+
+        public JobStatusService(IConfiguration configuration)
+            : this(configuration.GetSection("Jobs")["MongoDbConnectionString"], configuration.GetSection("Jobs")["MongoDbDatabaseName"])
+        {
         }
 
         public async Task<IEnumerable<JobOverview>> GetOverview()
@@ -36,9 +47,9 @@ namespace BusinessLogic
                     Job = job,
                     LastExecutions = lastExecutions,
                     LastRun = lastRun,
-                    NextRun = lastRun + job.ExpectedInterval,
-                    IsDue = lastRun + job.ExpectedInterval < DateTime.UtcNow,
-                    LastStatus = lastExecution.Status,
+                    NextRun = lastRun != null ? lastRun + job.ExpectedInterval : null,
+                    IsDue = lastRun != null ?  lastRun + job.ExpectedInterval < DateTime.UtcNow : false,
+                    LastStatus = lastExecution != null ? lastExecution.Status : DomainModel.JobExecutionStatus.Unknown,
                 });
             }
 

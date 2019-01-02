@@ -14,6 +14,8 @@ namespace DomainModel
 
         public string EmailSender { get; set; }
 
+        public string SubjectContains { get; set; }
+
         public string SubjectRegex { get; set; }
 
         public string SuccessSubjectRegex { get; set; }
