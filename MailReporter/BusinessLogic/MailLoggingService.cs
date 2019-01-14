@@ -36,7 +36,7 @@ namespace BusinessLogic
             // Match by subject regex
             if (job == null)
             {
-                var jobs = allJobs.Where(j => string.IsNullOrWhiteSpace(j.SubjectRegex) && Regex.IsMatch(mail.Subject, j.SubjectRegex));
+                var jobs = allJobs.Where(j => !string.IsNullOrWhiteSpace(j.SubjectRegex) && Regex.IsMatch(mail.Subject, j.SubjectRegex));
                 if(jobs.Count() > 1)
                 {
                     job = new Job { Name = "Ambiguous Subject RegEx: " + string.Join(" ,", jobs.Select(j => j.Name))};
@@ -47,7 +47,7 @@ namespace BusinessLogic
             // Match by subject contains
             if (job == null)
             {
-                var jobs = allJobs.Where(j => string.IsNullOrWhiteSpace(j.SubjectContains) && mail.Subject.Contains(j.SubjectContains));
+                var jobs = allJobs.Where(j => !string.IsNullOrWhiteSpace(j.SubjectContains) && mail.Subject.Contains(j.SubjectContains));
                 if (jobs.Count() > 1)
                 {
                     job = new Job { Name = "Ambiguous Subject Contains: " + string.Join(" ,", jobs.Select(j => j.Name)) };
@@ -82,7 +82,7 @@ namespace BusinessLogic
                 {
                     jobExecution.Status = JobExecutionStatus.Error;
                 }
-                else if(job.ErrorSubjectRegex != null && Regex.IsMatch(mail.Subject, job.SuccessSubjectRegex))
+                else if(job.SuccessSubjectRegex != null && Regex.IsMatch(mail.Subject, job.SuccessSubjectRegex))
                 {
                     jobExecution.Status = JobExecutionStatus.Success;
                 }

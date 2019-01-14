@@ -20,9 +20,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace MailReporter2
 {
-    public static class MailReporter2
+    public static class MailReporter
     {
-        [FunctionName("MailReporter2")]
+        [FunctionName("MailReporter")]
         public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", "head", Route = null)]HttpRequest req, TraceWriter log, ExecutionContext context)
         {
             log.Info($"C# HTTP trigger function processed a request. HTTP Method: {req.Method}");
@@ -85,8 +85,8 @@ namespace MailReporter2
             }
             catch (Exception e)
             {
-                log.Error(e.Message + "\r\n" + e.StackTrace);
-                throw e;
+                log.Error(An error occured: e.ToString(), e);
+                throw;
             }
             return new OkObjectResult("Event processed successfully");
         }
