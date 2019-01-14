@@ -2,23 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BusinessLogic;
+using DomainModel;
+using Mandrill.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Mvc.Controllers
 {
     public class MailReporterController : Controller
     {
-        private ILogger log = null;
 
         [HttpGet, HttpPost]
-        public static async Task<IActionResult> Mandrill()
+        public async Task<IActionResult> Mandrill()
         {
-            log.Info($"C# HTTP trigger function processed a request. HTTP Method: {req.Method}");
-
+            //log.Info($"C# HTTP trigger function processed a request. HTTP Method: {req.Method}");
+            var req = HttpContext.Request;
             try
             {
-
-
                 if (req.Method.ToUpper() == "HEAD")
                 {
                     return new OkObjectResult("Hello Mandrill!");
@@ -41,7 +43,7 @@ namespace Mvc.Controllers
                 {
                     return new BadRequestObjectResult("No webhook events found");
                 }
-                log.Info($"Processing {webhookEvents.Count} event(s)...");
+                //log.Info($"Processing {webhookEvents.Count} event(s)...");
 
                 var connectionString = "";// config["MongoDbConnectionString"];
                 var databaseName = "";// config["MongoDbDatabaseName"];
@@ -61,7 +63,7 @@ namespace Mvc.Controllers
                     };
 
                     var jobExecution = mailLoggingService.ConvertMailToJobExecution(mail);
-                    log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
+                    //log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
 
                     await mailLoggingService.SaveJobExecution(jobExecution);
 
@@ -69,8 +71,8 @@ namespace Mvc.Controllers
             }
             catch (Exception e)
             {
-                log.Error(e.Message + "\r\n" + e.StackTrace);
-                throw e;
+                //log.Error(e.Message + "\r\n" + e.StackTrace);
+                throw;
             }
             return new OkObjectResult("Event processed successfully");
         }

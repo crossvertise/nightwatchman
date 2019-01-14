@@ -85,7 +85,7 @@ namespace MailReporter2
             }
             catch (Exception e)
             {
-                log.Error(An error occured: e.ToString(), e);
+                log.Error("An error occured:" + e.ToString(), e);
                 throw;
             }
             return new OkObjectResult("Event processed successfully");
