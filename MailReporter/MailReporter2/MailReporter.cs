@@ -17,6 +17,7 @@ using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using System.Net.Mail;
 
 namespace MailReporter2
 {
@@ -86,9 +87,24 @@ namespace MailReporter2
             catch (Exception e)
             {
                 log.Error("An error occured:" + e.ToString(), e);
+                SendErrorEmail(e);
                 throw;
             }
             return new OkObjectResult("Event processed successfully");
+        }
+
+        private static void SendErrorEmail(Exception e)
+        {
+            using (var client = new SmtpClient())
+            {
+                client.Host = "smtprelaypool.ispgateway.de:587";
+                client.Credentials = new NetworkCredential("error-reporter@crossvertise.com", "yveyUmrt2m9");
+
+                var subject = $"[Nightwatchman] MailReporter - Error";
+                var body = $"An error occurred during the mail import \n\n {e}";
+
+                client.Send("error-reporter@crossvertise.com", "m.balbach@crossvertise.com", subject, body.ToString());
+            }
         }
     }
 }

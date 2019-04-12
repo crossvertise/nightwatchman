@@ -7,7 +7,11 @@
 
 <div class="row"></div>
 @foreach(var job in Model) {
-    var status = job.LastStatus == DomainModel.JobExecutionStatus.Success ? "panel-success" : job.LastStatus == DomainModel.JobExecutionStatus.Error ? "panel-danger" : "panel-default";
+    var status = job.LastStatus == DomainModel.JobExecutionStatus.Error || job.IsDue
+        ? "panel-danger"
+        : job.LastStatus == DomainModel.JobExecutionStatus.Success
+            ? "panel-success"
+            : "panel-default";
     <div class="col-lg-2 col-md-3 col-sm-6">
         <div class="panel @status">
             <div class="panel-heading">@job.Job.Name</div>
