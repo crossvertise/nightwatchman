@@ -10,19 +10,19 @@ namespace BusinessLogic
 {
     public class MailLoggingService
     {
-        public JobExecutionRepo JobExecutionRepo { get; set; }
+        public IJobExecutionRepo JobExecutionRepo { get; set; }
 
-        public JobRepo JobRepo { get; set; }
+        public IJobRepo JobRepo { get; set; }
 
-        public MailLoggingService(string mongoDbConnectionString, string mongoDbDatabaseName)
+        public MailLoggingService(IJobRepo jobRepo, IJobExecutionRepo jobExecutionRepo)
         {
-            JobExecutionRepo = new JobExecutionRepo(mongoDbConnectionString, mongoDbDatabaseName);
-            JobRepo = new JobRepo(); //(mongoDbConnectionString, mongoDbDatabaseName);
+            JobExecutionRepo = jobExecutionRepo;
+            JobRepo = jobRepo;
         }
 
-        public JobExecution ConvertMailToJobExecution(NotificationEmail mail)
+        public async Task<JobExecution> ConvertMailToJobExecution(NotificationEmail mail)
         {
-            var allJobs = JobRepo.GetAll();
+            var allJobs = await JobRepo.GetAll();
 
             // Determine matching job
             Job job = null;

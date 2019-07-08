@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace Repos
 {
-    public class JobExecutionRepo : AMongoRepo<JobExecution>
+    public class JobExecutionRepo : AMongoRepo<JobExecution>, IJobExecutionRepo
     {
+        protected override Func<JobExecution, string> IdProperty => (j => j.Id);
+
         public JobExecutionRepo(string connectionString, string databaseName) : base(connectionString, databaseName)
         { }
 

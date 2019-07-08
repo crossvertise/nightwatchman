@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 
 namespace Repos
@@ -13,6 +14,8 @@ namespace Repos
         protected IMongoDatabase Database { get; set; }
 
         protected IMongoCollection<T> Collection { get; set; }
+
+        protected abstract Func<T, string> IdProperty { get; }
 
         //protected AMongoRepo()
         //{
@@ -30,9 +33,32 @@ namespace Repos
             Collection = Database.GetCollection<T>(typeof(T).Name);
         }
 
+        protected AMongoRepo(IConfiguration configuration) 
+            : this(configuration.GetSection("Jobs")["MongoDbConnectionString"], configuration.GetSection("Jobs")["MongoDbConnectionString"])
+        {
+        }
+
         public async Task Create(T item)
         {
             await Collection.InsertOneAsync(item);
+        }
+
+        public async Task CreateMany(IEnumerable<T> items)
+        {
+            await Collection.InsertManyAsync(items);
+        }
+
+        public async Task Update(T item)
+        {
+            var id = IdProperty(item);
+            var filter = Builders<T>.Filter.Eq("id", id);
+            await Collection.ReplaceOneAsync(filter, item);
+        }
+
+        public async Task Delete(string id)
+        {
+            var filter = Builders<T>.Filter.Eq("id", id);
+            await Collection.DeleteOneAsync(filter);
         }
 
         public async Task<T> GetById(string id)

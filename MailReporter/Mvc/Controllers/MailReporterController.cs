@@ -13,6 +13,13 @@ namespace Mvc.Controllers
 {
     public class MailReporterController : Controller
     {
+        public MailLoggingService MailLoggingService { get; set; }
+
+        public MailReporterController(MailLoggingService mailLoggingService)
+        {
+            MailLoggingService = mailLoggingService;
+        }
+
 
         [HttpGet, HttpPost]
         public async Task<IActionResult> Mandrill()
@@ -45,10 +52,6 @@ namespace Mvc.Controllers
                 }
                 //log.Info($"Processing {webhookEvents.Count} event(s)...");
 
-                var connectionString = "";// config["MongoDbConnectionString"];
-                var databaseName = "";// config["MongoDbDatabaseName"];
-                var mailLoggingService = new MailLoggingService(connectionString, databaseName);
-
                 foreach (var webhookEvent in webhookEvents)
                 {
                     var msg = webhookEvent.Msg;
@@ -62,10 +65,10 @@ namespace Mvc.Controllers
                         BodyText = msg.Text,
                     };
 
-                    var jobExecution = mailLoggingService.ConvertMailToJobExecution(mail);
+                    var jobExecution = await MailLoggingService.ConvertMailToJobExecution(mail);
                     //log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
 
-                    await mailLoggingService.SaveJobExecution(jobExecution);
+                    await MailLoggingService.SaveJobExecution(jobExecution);
 
                 }
             }

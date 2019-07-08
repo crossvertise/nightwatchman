@@ -16,24 +16,19 @@ namespace BusinessLogic
 
     public class JobStatusService : IJobStatusService
     {
-        public JobExecutionRepo JobExecutionRepo { get; set; }
+        public IJobExecutionRepo JobExecutionRepo { get; set; }
 
-        public JobRepo JobRepo { get; set; }
+        public IJobRepo JobRepo { get; set; }
 
-        public JobStatusService(string mongoDbConnectionString, string mongoDbDatabaseName)
+        public JobStatusService(IJobRepo jobRepo, IJobExecutionRepo jobExecutionRepo)
         {
-            JobExecutionRepo = new JobExecutionRepo(mongoDbConnectionString, mongoDbDatabaseName);
-            JobRepo = new JobRepo(); //(mongoDbConnectionString, mongoDbDatabaseName);
-        }
-
-        public JobStatusService(IConfiguration configuration)
-            : this(configuration.GetSection("Jobs")["MongoDbConnectionString"], configuration.GetSection("Jobs")["MongoDbDatabaseName"])
-        {
+            JobExecutionRepo = jobExecutionRepo;
+            JobRepo = jobRepo;
         }
 
         public async Task<IEnumerable<JobOverview>> GetOverview()
         {
-            var allJobs = JobRepo.GetAll();
+            var allJobs = await JobRepo.GetAll();
             var jobOverviews = new List<JobOverview>();
 
             foreach (var job in allJobs)
