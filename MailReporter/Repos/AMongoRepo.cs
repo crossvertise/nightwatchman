@@ -25,7 +25,7 @@ namespace Repos
         //    Collection = Database.GetCollection<T>(nameof(T));
         //}
 
-        protected AMongoRepo(string connectionString, string databaseName)
+        public AMongoRepo(string connectionString, string databaseName)
         {
 
             Client = new MongoClient(connectionString);
@@ -33,8 +33,8 @@ namespace Repos
             Collection = Database.GetCollection<T>(typeof(T).Name);
         }
 
-        protected AMongoRepo(IConfiguration configuration) 
-            : this(configuration.GetSection("Jobs")["MongoDbConnectionString"], configuration.GetSection("Jobs")["MongoDbConnectionString"])
+        public AMongoRepo(IConfiguration configuration) 
+            : this(configuration.GetSection("Jobs")["MongoDbConnectionString"], configuration.GetSection("Jobs")["MongoDbDatabaseName"])
         {
         }
 
@@ -51,19 +51,19 @@ namespace Repos
         public async Task Update(T item)
         {
             var id = IdProperty(item);
-            var filter = Builders<T>.Filter.Eq("id", id);
+            var filter = Builders<T>.Filter.Eq("_id", id);
             await Collection.ReplaceOneAsync(filter, item);
         }
 
         public async Task Delete(string id)
         {
-            var filter = Builders<T>.Filter.Eq("id", id);
+            var filter = Builders<T>.Filter.Eq("_id", id);
             await Collection.DeleteOneAsync(filter);
         }
 
         public async Task<T> GetById(string id)
         {
-            var filter = Builders<T>.Filter.Eq("id", id);
+            var filter = Builders<T>.Filter.Eq("_id", id);
             var result = await Collection.Find(filter).FirstOrDefaultAsync();
             return result;
         }

@@ -1,0 +1,80 @@
+﻿@model DomainModel.Job
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h2>Delete</h2>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>Job</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Id)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Id)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Name)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.EmailSender)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.EmailSender)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.SubjectContains)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.SubjectContains)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.SubjectRegex)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.SubjectRegex)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.SuccessSubjectRegex)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.SuccessSubjectRegex)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.ErrorSubjectRegex)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.ErrorSubjectRegex)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.SuccessBodyRegex)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.SuccessBodyRegex)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.ErrorBodyRegex)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.ErrorBodyRegex)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.ExpectedInterval)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.ExpectedInterval)
+        </dd>
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="submit" value="Delete" class="btn btn-default" /> |
+        <a asp-action="Index">Back to List</a>
+    </form>
+</div>

@@ -1,0 +1,75 @@
+﻿@model DomainModel.Job
+
+@{
+    ViewData["Title"] = "View";
+}
+
+<h2>View</h2>
+
+<h4>Job</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Id" class="control-label"></label>
+                <input asp-for="Id" class="form-control" />
+                <span asp-validation-for="Id" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="EmailSender" class="control-label"></label>
+                <input asp-for="EmailSender" class="form-control" />
+                <span asp-validation-for="EmailSender" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SubjectContains" class="control-label"></label>
+                <input asp-for="SubjectContains" class="form-control" />
+                <span asp-validation-for="SubjectContains" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SubjectRegex" class="control-label"></label>
+                <input asp-for="SubjectRegex" class="form-control" />
+                <span asp-validation-for="SubjectRegex" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SuccessSubjectRegex" class="control-label"></label>
+                <input asp-for="SuccessSubjectRegex" class="form-control" />
+                <span asp-validation-for="SuccessSubjectRegex" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ErrorSubjectRegex" class="control-label"></label>
+                <input asp-for="ErrorSubjectRegex" class="form-control" />
+                <span asp-validation-for="ErrorSubjectRegex" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SuccessBodyRegex" class="control-label"></label>
+                <input asp-for="SuccessBodyRegex" class="form-control" />
+                <span asp-validation-for="SuccessBodyRegex" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ErrorBodyRegex" class="control-label"></label>
+                <input asp-for="ErrorBodyRegex" class="form-control" />
+                <span asp-validation-for="ErrorBodyRegex" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ExpectedInterval" class="control-label"></label>
+                <input asp-for="ExpectedInterval" class="form-control" />
+                <span asp-validation-for="ExpectedInterval" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-default" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+

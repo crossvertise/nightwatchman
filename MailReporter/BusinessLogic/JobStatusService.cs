@@ -12,6 +12,9 @@ namespace BusinessLogic
     public interface IJobStatusService
     {
         Task<IEnumerable<JobOverview>> GetOverview();
+
+        Task<long> MigrateData(string oldname, string newname, string newJobId);
+        Task ReclassifyUnclassified();
     }
 
     public class JobStatusService : IJobStatusService
@@ -33,7 +36,9 @@ namespace BusinessLogic
 
             foreach (var job in allJobs)
             {
-                var lastExecutions = (await JobExecutionRepo.GetLastExecutionsByName(job.Name, 5)).ToList();
+                var lastExecutions = (job.Id != null) 
+                    ? (await JobExecutionRepo.GetLastExecutionsById(job.Id, 5)).ToList() 
+                    : (await JobExecutionRepo.GetLastExecutionsByName(job.Name, 5)).ToList();
                 var lastExecution = lastExecutions.FirstOrDefault();
                 var lastRun = lastExecutions.FirstOrDefault()?.Finished;
 
@@ -51,5 +56,15 @@ namespace BusinessLogic
             return jobOverviews;
         }
 
+        public async Task<long> MigrateData(string oldname, string newname, string newJobId)
+        {
+            return await JobExecutionRepo.MigrateData(oldname, newname, newJobId);
+        }
+
+        public async Task ReclassifyUnclassified()
+        {
+            var unclassifiedJobs = await JobExecutionRepo.GetUnclassifiedJobs();
+
+        }
     }
 }
