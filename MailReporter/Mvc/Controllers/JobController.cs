@@ -102,9 +102,9 @@ namespace Mvc.Controllers
         [HttpPost]
         public async Task<IActionResult> ReclassifyUnclassified()
         {
-            await _jobStatusService.ReclassifyUnclassified();
+            var count = await _jobStatusService.ReclassifyUnclassified();
 
-            return new OkResult();
+            return new OkObjectResult(count);
         }
     }
 }

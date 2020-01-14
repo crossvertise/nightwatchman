@@ -38,7 +38,7 @@ namespace Repos
 
         public async Task<IList<JobExecution>> GetUnclassifiedJobs()
         {
-            var result = await Collection.Find(j => j.JobName == null).Limit(1000).ToListAsync();
+            var result = await Collection.Find(j => j.JobName == null || j.JobName == "Unknown").SortByDescending(j => j.Started).Limit(1000).ToListAsync();
             return result;
         }
     }

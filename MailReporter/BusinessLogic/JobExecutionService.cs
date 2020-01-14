@@ -21,7 +21,7 @@ namespace BusinessLogic
 
         Task Create(JobExecution jobExecution);
 
-        Task ReclassifyUnclassified();
+        Task<int> ReclassifyUnclassified();
     }
 
     public class JobExecutionService : IJobExecutionService
@@ -195,21 +195,26 @@ namespace BusinessLogic
             return await _jobExecutionRepo.MigrateData(oldname, newname, newJobId);
         }
 
-        public async Task ReclassifyUnclassified()
+        public async Task<int> ReclassifyUnclassified()
         {
             var unclassifiedJobs = await _jobExecutionRepo.GetUnclassifiedJobs();
+            int reclassifiedCount = 0;
 
             foreach (var jobExecution in unclassifiedJobs)
             {
                 var job = await ClassifyExecution(jobExecution);
-                var status = DetermineJobStatus(jobExecution, job);
-                jobExecution.JobId = job.Id;
-                jobExecution.JobName = job.Name;
-                jobExecution.Status = status;
+                if (job != null && job.Name != "Unknown")
+                {
+                    var status = DetermineJobStatus(jobExecution, job);
+                    jobExecution.JobId = job.Id;
+                    jobExecution.JobName = job.Name;
+                    jobExecution.Status = status;
 
-                await _jobExecutionRepo.Update(jobExecution);
+                    await _jobExecutionRepo.Update(jobExecution);
+                    reclassifiedCount++;
+                }
             }
-
+            return reclassifiedCount;
         }
     }
 }
