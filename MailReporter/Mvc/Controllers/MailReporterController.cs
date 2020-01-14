@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BusinessLogic;
 using DomainModel;
 using Mandrill.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Mvc.Attributes;
@@ -21,7 +22,7 @@ namespace Mvc.Controllers
             this.jobExecutionService = jobExecutionService;
         }
 
-
+        [AllowAnonymous]
         [HttpGet, HttpPost, HttpHead]
         [MandrillWebhook(KeyAppSetting = "MandrillWebhookKey")]
         public async Task<IActionResult> Mandrill()
