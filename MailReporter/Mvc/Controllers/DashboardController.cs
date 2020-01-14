@@ -9,9 +9,9 @@ namespace Mvc.Controllers
 {
     public class DashboardController : Controller
     {
-        private IJobStatusService _jobStatusService;
+        private IJobExecutionService _jobStatusService;
 
-        public DashboardController(IJobStatusService jobStatusService)
+        public DashboardController(IJobExecutionService jobStatusService)
         {
             _jobStatusService = jobStatusService;
         }

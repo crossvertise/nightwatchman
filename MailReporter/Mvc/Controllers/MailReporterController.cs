@@ -13,11 +13,11 @@ namespace Mvc.Controllers
 {
     public class MailReporterController : Controller
     {
-        public MailLoggingService MailLoggingService { get; set; }
+        private readonly IJobExecutionService jobExecutionService;
 
-        public MailReporterController(MailLoggingService mailLoggingService)
+        public MailReporterController(IJobExecutionService jobExecutionService)
         {
-            MailLoggingService = mailLoggingService;
+            this.jobExecutionService = jobExecutionService;
         }
 
 
@@ -65,10 +65,10 @@ namespace Mvc.Controllers
                         BodyText = msg.Text,
                     };
 
-                    var jobExecution = await MailLoggingService.ConvertMailToJobExecution(mail);
+                    var jobExecution = await jobExecutionService.ConvertMailToJobExecution(mail);
                     //log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
 
-                    await MailLoggingService.SaveJobExecution(jobExecution);
+                    await jobExecutionService.Create(jobExecution);
 
                 }
             }

@@ -35,11 +35,7 @@ namespace Mvc
 
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-            services
-                .AddScoped<IJobStatusService, JobStatusService>()
-                .AddScoped<IJobService, JobService>()
-                .AddScoped<IJobRepo, JobRepo>()
-                .AddScoped<IJobExecutionRepo, JobExecutionRepo>();
+            services.AddBusinessLogic();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

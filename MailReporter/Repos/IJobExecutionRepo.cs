@@ -14,6 +14,8 @@ namespace Repos
 
         Task Create(JobExecution jobExecution);
 
+        Task Update(JobExecution jobExecution);
+
         Task<IList<JobExecution>> GetUnclassifiedJobs();
     }
 }

@@ -10,7 +10,8 @@ namespace BusinessLogic
         public static IServiceCollection AddBusinessLogic(this IServiceCollection service)
         {
             return service
-                .AddScoped<MailLoggingService>()
+                .AddScoped<IJobExecutionService, JobExecutionService>()
+                .AddScoped<IJobService, JobService>()
                 .AddRepos();
         }
     }

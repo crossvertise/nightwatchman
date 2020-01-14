@@ -12,9 +12,9 @@ namespace Mvc.Controllers
     {
         private IJobService _jobService;
 
-        private IJobStatusService _jobStatusService;
+        private IJobExecutionService _jobStatusService;
 
-        public JobController(IJobService jobService, IJobStatusService jobStatusService)
+        public JobController(IJobService jobService, IJobExecutionService jobStatusService)
         {
             _jobService = jobService;
             _jobStatusService = jobStatusService;
@@ -27,7 +27,7 @@ namespace Mvc.Controllers
             return View(allJobs);
         }
 
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
             return View();
         }
