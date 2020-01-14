@@ -7,6 +7,7 @@ using DomainModel;
 using Mandrill.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Mvc.Attributes;
 using Newtonsoft.Json;
 
 namespace Mvc.Controllers
@@ -21,7 +22,8 @@ namespace Mvc.Controllers
         }
 
 
-        [HttpGet, HttpPost]
+        [HttpGet, HttpPost, HttpHead]
+        [MandrillWebhook(KeyAppSetting = "MandrillWebhookKey")]
         public async Task<IActionResult> Mandrill()
         {
             //log.Info($"C# HTTP trigger function processed a request. HTTP Method: {req.Method}");

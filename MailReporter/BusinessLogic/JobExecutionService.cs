@@ -144,8 +144,8 @@ namespace BusinessLogic
         {
             JobExecutionStatus status;
             // determine the status
-            var errorWords = _configuration.GetSection("Jobs")["ErrorWords"].Split(',').Select(w => w.Trim()).Where(w => string.IsNullOrWhiteSpace(w)).ToList();
-            var successWords = _configuration.GetSection("Jobs")["SuccessWords"].Split(',').Select(w => w.Trim()).Where(w => string.IsNullOrWhiteSpace(w)).ToList(); ;
+            var errorWords = _configuration["ErrorWords"].Split(',').Select(w => w.Trim()).Where(w => !string.IsNullOrWhiteSpace(w)).ToList();
+            var successWords = _configuration["SuccessWords"].Split(',').Select(w => w.Trim()).Where(w => !string.IsNullOrWhiteSpace(w)).ToList(); ;
 
             if (!errorWords.Any() || !successWords.Any())
                 throw new InvalidOperationException("SuccessWords or ErrorWords not properly defined in the config.");

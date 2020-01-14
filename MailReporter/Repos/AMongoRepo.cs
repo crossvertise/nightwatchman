@@ -34,7 +34,7 @@ namespace Repos
         }
 
         public AMongoRepo(IConfiguration configuration) 
-            : this(configuration.GetSection("Jobs")["MongoDbConnectionString"], configuration.GetSection("Jobs")["MongoDbDatabaseName"])
+            : this(configuration["MongoDbConnectionString"], configuration["MongoDbDatabaseName"])
         {
         }
 
