@@ -37,7 +37,7 @@ namespace Mvc.Controllers
             var prtg = new PrtgResult {
                 Prtg = new Prtg
                 {
-                    Result = overview.Select(o => new PrtgChannel
+                    Result = overview.Where(o => o.LastRun != null).Select(o => new PrtgChannel
                     {
                         Channel = o.Job.Name,
                         Value = (int)((o.LastRun + o.Job.ExpectedInterval) - DateTime.UtcNow)?.TotalSeconds,
