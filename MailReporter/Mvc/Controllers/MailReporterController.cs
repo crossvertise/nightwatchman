@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Mvc.Attributes;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Xv.Mvc.SendInBlue.Models;
 
 namespace Mvc.Controllers
 {
@@ -66,6 +68,58 @@ namespace Mvc.Controllers
 
                         BodyHtml = msg.Html,
                         BodyText = msg.Text,
+                    };
+
+                    var jobExecution = await jobExecutionService.ConvertMailToJobExecution(mail);
+                    //log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
+
+                    await jobExecutionService.Create(jobExecution);
+
+                }
+            }
+            catch (Exception e)
+            {
+                //log.Error(e.Message + "\r\n" + e.StackTrace);
+                throw;
+            }
+            return new OkObjectResult("Event processed successfully");
+        }
+
+        [AllowAnonymous]
+        [HttpGet, HttpPost, HttpHead]
+        public async Task<IActionResult> SendInBlue(JObject payload)
+        {
+            //log.Info($"C# HTTP trigger function processed a request. HTTP Method: {req.Method}");
+            var req = HttpContext.Request;
+            try
+            {
+                if (req.Method.ToUpper() == "HEAD")
+                {
+                    return new OkObjectResult("Hello SendinBlue!");
+                }
+
+                if (!req.HasFormContentType)
+                {
+                    return new BadRequestObjectResult("No form content received");
+                }
+                SendInBlueWebhookPayload sendInBlueWebhookPayload = JsonConvert.DeserializeObject<SendInBlueWebhookPayload>(JsonConvert.SerializeObject(payload));
+                var webhookEvents = sendInBlueWebhookPayload?.SendInBlueItemDetails;
+                if (webhookEvents == null)
+                {
+                    return new BadRequestObjectResult("No webhook events found");
+                }
+                //log.Info($"Processing {webhookEvents.Count} event(s)...");
+
+                foreach (var webhookEvent in webhookEvents)
+                {
+                    var mail = new NotificationEmail
+                    {
+                        Sender = webhookEvent.From.Address,
+                        //Recipient = msg.
+                        Subject = webhookEvent.Subject,
+
+                        BodyHtml = webhookEvent.RawHtmlBody,
+                        BodyText = webhookEvent.RawTextBody,
                     };
 
                     var jobExecution = await jobExecutionService.ConvertMailToJobExecution(mail);
