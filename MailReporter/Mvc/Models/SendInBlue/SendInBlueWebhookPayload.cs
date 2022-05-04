@@ -1,9 +1,8 @@
-﻿namespace Xv.Mvc.SendInBlue.Models
+﻿namespace Mvc.Models.SendInBlue
 {
     using System.Collections.Generic;
     using Newtonsoft.Json;
-    using Xv.Mvc.SendInBlue.Models;
-
+    
     public class SendInBlueWebhookPayload
     {
         [JsonProperty("items")]

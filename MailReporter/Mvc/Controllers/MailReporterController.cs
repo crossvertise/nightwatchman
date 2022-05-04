@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 using Mvc.Attributes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Xv.Mvc.SendInBlue.Models;
+using Mvc.Models.SendInBlue;
 
 namespace Mvc.Controllers
 {

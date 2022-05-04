@@ -1,4 +1,4 @@
-﻿namespace Xv.Mvc.Services.SendInBlue.Models
+﻿namespace Mvc.Models.SendInBlue
 {
     using System;
     using System.Collections.Generic;
