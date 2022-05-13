@@ -31,7 +31,6 @@ namespace Mvc.Controllers
         [MandrillWebhook(KeyAppSetting = "MandrillWebhookKey")]
         public async Task<IActionResult> Mandrill()
         {
-            //log.Info($"C# HTTP trigger function processed a request. HTTP Method: {req.Method}");
             var req = HttpContext.Request;
             try
             {
@@ -57,15 +56,13 @@ namespace Mvc.Controllers
                 {
                     return new BadRequestObjectResult("No webhook events found");
                 }
-                //log.Info($"Processing {webhookEvents.Count} event(s)...");
-
+         
                 foreach (var webhookEvent in webhookEvents)
                 {
                     var msg = webhookEvent.Msg;
                     var mail = new NotificationEmail
                     {
                         Sender = msg.FromEmail,
-                        //Recipient = msg.
                         Subject = msg.Subject,
 
                         BodyHtml = msg.Html,
@@ -73,42 +70,29 @@ namespace Mvc.Controllers
                     };
 
                     var jobExecution = await _jobExecutionService.ConvertMailToJobExecution(mail);
-                    //log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
-
+                    
                     await _jobExecutionService.Create(jobExecution);
 
                 }
             }
             catch (Exception e)
             {
-                //log.Error(e.Message + "\r\n" + e.StackTrace);
                 throw;
             }
             return new OkObjectResult("Event processed successfully");
         }
 
         [AllowAnonymous]
-        [HttpGet, HttpPost, HttpHead]
+        [HttpPost]
         public async Task<IActionResult> SendInBlue(JObject payload)
         {
-            //log.Info($"C# HTTP trigger function processed a request. HTTP Method: {req.Method}");
             var req = HttpContext.Request;
             try
             {
-                if (req.Method.ToUpper() == "HEAD")
-                {
-                    return new OkObjectResult("Hello SendinBlue!");
-                }
-
-                if (!req.HasFormContentType)
-                {
-                    return new BadRequestObjectResult("No form content received");
-                }
                 await _sendInBlueService.ProcessEvent(payload);
             }
             catch (Exception e)
             {
-                //log.Error(e.Message + "\r\n" + e.StackTrace);
                 throw;
             }
             return new OkObjectResult("Event processed successfully");

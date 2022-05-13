@@ -23,16 +23,14 @@ namespace BusinessLogic.Implementations
             var webhookEvents = sendInBlueWebhookPayload?.SendInBlueItemDetails;
             if (webhookEvents == null)
             {
-                return (IsSuccess: false, ErrorMessage: "No webhook events found");
+                return (IsSuccess: false, ErrorMessage: SendInBlueConstants.EmptyEvent);
             }
-            //log.Info($"Processing {webhookEvents.Count} event(s)...");
 
             foreach (var webhookEvent in webhookEvents)
             {
                 var mail = new NotificationEmail
                 {
                     Sender = webhookEvent.From.Address,
-                    //Recipient = msg.
                     Subject = webhookEvent.Subject,
 
                     BodyHtml = webhookEvent.RawHtmlBody,
@@ -40,8 +38,7 @@ namespace BusinessLogic.Implementations
                 };
 
                 var jobExecution = await _jobExecutionService.ConvertMailToJobExecution(mail);
-                //log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
-
+             
                 await _jobExecutionService.Create(jobExecution);
 
             }
