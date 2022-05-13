@@ -4,6 +4,7 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace BusinessLogic.Tests
 {
@@ -16,15 +17,25 @@ namespace BusinessLogic.Tests
         [SetUp]
         public void Setup()
         {
-             _sendInBluePayload = JObject.Parse(File.ReadAllText(@"c:\videogames.json"));
+            _sendInBluePayload = JObject.Parse(File.ReadAllText("./TestData/SendInBlue.Event.json"));
             _sendInBlueService = new SendInBlueService(_jobExecutionService.Object);
         }
 
         [Test]
-        public void ProcessSendInBlueEvent()
+        public async Task ProcessSendInBlueEvent()
         {
-            _sendInBlueService.ProcessEvent();
-            Assert.Pass();
+            var result = await _sendInBlueService.ProcessEvent(_sendInBluePayload);
+            Assert.IsTrue(result.IsSuccess);
+            Assert.IsEmpty(result.ErrorMessage);
+        }
+
+        [Test]
+        public async Task ProcessSendInBlueEvent_EmptyEvent()
+        {
+            _sendInBluePayload = new JObject();
+            var result = await _sendInBlueService.ProcessEvent(_sendInBluePayload);
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsNotEmpty(result.ErrorMessage);
         }
     }
 }

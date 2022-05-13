@@ -17,13 +17,13 @@ namespace BusinessLogic.Implementations
         {
             _jobExecutionService = jobExecutionService;
         }
-        public async Task<(bool, string)> ProcessEvent(JObject sendInBlueEvent)
+        public async Task<(bool IsSuccess, string ErrorMessage)> ProcessEvent(JObject sendInBlueEvent)
         {
             SendInBlueWebhookPayload sendInBlueWebhookPayload = JsonConvert.DeserializeObject<SendInBlueWebhookPayload>(JsonConvert.SerializeObject(sendInBlueEvent));
             var webhookEvents = sendInBlueWebhookPayload?.SendInBlueItemDetails;
             if (webhookEvents == null)
             {
-                return (false, "No webhook events found");
+                return (IsSuccess: false, ErrorMessage: "No webhook events found");
             }
             //log.Info($"Processing {webhookEvents.Count} event(s)...");
 
@@ -46,7 +46,7 @@ namespace BusinessLogic.Implementations
 
             }
 
-            return (true, String.Empty);
+            return (IsSuccess: true, ErrorMessage: String.Empty);
         }
     }
 }

@@ -8,6 +8,6 @@ namespace BusinessLogic.Interfaces
 {
     public interface ISendInBlueService
     {
-        Task<(bool, string)> ProcessEvent(JObject sendInBlueEvent);
+        Task<(bool IsSuccess, string ErrorMessage)> ProcessEvent(JObject sendInBlueEvent);
     }
 }
