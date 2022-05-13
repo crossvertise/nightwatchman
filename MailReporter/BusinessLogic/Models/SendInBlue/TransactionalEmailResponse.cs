@@ -1,4 +1,4 @@
-﻿namespace Mvc.Models.SendInBlue
+﻿namespace BusinessLogic.Models.SendInBlue
 {
     using System.Collections.Generic;
     using Newtonsoft.Json;

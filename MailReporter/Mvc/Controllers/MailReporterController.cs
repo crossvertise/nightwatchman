@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BusinessLogic;
+using BusinessLogic.Interfaces;
 using DomainModel;
 using Mandrill.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -11,17 +12,18 @@ using Microsoft.Extensions.Logging;
 using Mvc.Attributes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Mvc.Models.SendInBlue;
 
 namespace Mvc.Controllers
 {
     public class MailReporterController : Controller
     {
-        private readonly IJobExecutionService jobExecutionService;
+        private readonly IJobExecutionService _jobExecutionService;
+        private readonly ISendInBlueService _sendInBlueService;
 
-        public MailReporterController(IJobExecutionService jobExecutionService)
+        public MailReporterController(IJobExecutionService jobExecutionService, ISendInBlueService sendInBlueService)
         {
-            this.jobExecutionService = jobExecutionService;
+            _jobExecutionService = jobExecutionService;
+            _sendInBlueService = sendInBlueService;
         }
 
         [AllowAnonymous]
@@ -70,10 +72,10 @@ namespace Mvc.Controllers
                         BodyText = msg.Text,
                     };
 
-                    var jobExecution = await jobExecutionService.ConvertMailToJobExecution(mail);
+                    var jobExecution = await _jobExecutionService.ConvertMailToJobExecution(mail);
                     //log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
 
-                    await jobExecutionService.Create(jobExecution);
+                    await _jobExecutionService.Create(jobExecution);
 
                 }
             }
@@ -102,32 +104,7 @@ namespace Mvc.Controllers
                 {
                     return new BadRequestObjectResult("No form content received");
                 }
-                SendInBlueWebhookPayload sendInBlueWebhookPayload = JsonConvert.DeserializeObject<SendInBlueWebhookPayload>(JsonConvert.SerializeObject(payload));
-                var webhookEvents = sendInBlueWebhookPayload?.SendInBlueItemDetails;
-                if (webhookEvents == null)
-                {
-                    return new BadRequestObjectResult("No webhook events found");
-                }
-                //log.Info($"Processing {webhookEvents.Count} event(s)...");
-
-                foreach (var webhookEvent in webhookEvents)
-                {
-                    var mail = new NotificationEmail
-                    {
-                        Sender = webhookEvent.From.Address,
-                        //Recipient = msg.
-                        Subject = webhookEvent.Subject,
-
-                        BodyHtml = webhookEvent.RawHtmlBody,
-                        BodyText = webhookEvent.RawTextBody,
-                    };
-
-                    var jobExecution = await jobExecutionService.ConvertMailToJobExecution(mail);
-                    //log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
-
-                    await jobExecutionService.Create(jobExecution);
-
-                }
+                await _sendInBlueService.ProcessEvent(payload);
             }
             catch (Exception e)
             {
