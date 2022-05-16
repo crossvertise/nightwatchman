@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BusinessLogic;
+using BusinessLogic.Interfaces;
 using DomainModel;
 using Mandrill.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -10,16 +11,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Mvc.Attributes;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Mvc.Controllers
 {
     public class MailReporterController : Controller
     {
-        private readonly IJobExecutionService jobExecutionService;
+        private readonly IJobExecutionService _jobExecutionService;
+        private readonly ISendInBlueService _sendInBlueService;
 
-        public MailReporterController(IJobExecutionService jobExecutionService)
+        public MailReporterController(IJobExecutionService jobExecutionService, ISendInBlueService sendInBlueService)
         {
-            this.jobExecutionService = jobExecutionService;
+            _jobExecutionService = jobExecutionService;
+            _sendInBlueService = sendInBlueService;
         }
 
         [AllowAnonymous]
@@ -27,7 +31,6 @@ namespace Mvc.Controllers
         [MandrillWebhook(KeyAppSetting = "MandrillWebhookKey")]
         public async Task<IActionResult> Mandrill()
         {
-            //log.Info($"C# HTTP trigger function processed a request. HTTP Method: {req.Method}");
             var req = HttpContext.Request;
             try
             {
@@ -53,31 +56,43 @@ namespace Mvc.Controllers
                 {
                     return new BadRequestObjectResult("No webhook events found");
                 }
-                //log.Info($"Processing {webhookEvents.Count} event(s)...");
-
+         
                 foreach (var webhookEvent in webhookEvents)
                 {
                     var msg = webhookEvent.Msg;
                     var mail = new NotificationEmail
                     {
                         Sender = msg.FromEmail,
-                        //Recipient = msg.
                         Subject = msg.Subject,
 
                         BodyHtml = msg.Html,
                         BodyText = msg.Text,
                     };
 
-                    var jobExecution = await jobExecutionService.ConvertMailToJobExecution(mail);
-                    //log.Info(JsonConvert.SerializeObject(jobExecution, Formatting.None));
-
-                    await jobExecutionService.Create(jobExecution);
+                    var jobExecution = await _jobExecutionService.ConvertMailToJobExecution(mail);
+                    
+                    await _jobExecutionService.Create(jobExecution);
 
                 }
             }
             catch (Exception e)
             {
-                //log.Error(e.Message + "\r\n" + e.StackTrace);
+                throw;
+            }
+            return new OkObjectResult("Event processed successfully");
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task<IActionResult> SendInBlue(JObject payload)
+        {
+            var req = HttpContext.Request;
+            try
+            {
+                await _sendInBlueService.ProcessEvent(payload);
+            }
+            catch (Exception e)
+            {
                 throw;
             }
             return new OkObjectResult("Event processed successfully");
