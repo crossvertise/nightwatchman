@@ -13,7 +13,7 @@ namespace BusinessLogic
         {
             return service
                 .AddScoped<IJobExecutionService, JobExecutionService>()
-                .AddScoped<ISendInBlueService,SendInBlueService>()
+                .AddScoped<ISendInBlueService, SendInBlueService>()
                 .AddScoped<IJobService, JobService>()
                 .AddRepos();
         }
