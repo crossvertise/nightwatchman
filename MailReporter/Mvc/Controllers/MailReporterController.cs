@@ -84,7 +84,7 @@ namespace Mvc.Controllers
 
         [AllowAnonymous]
         [HttpPost]
-        public async Task<IActionResult> SendInBlue(JObject payload)
+        public async Task<IActionResult> SendInBlue([FromBody] JObject payload)
         {
             var req = HttpContext.Request;
             try
