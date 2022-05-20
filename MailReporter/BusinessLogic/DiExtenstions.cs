@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using BusinessLogic.Implementations;
+using BusinessLogic.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BusinessLogic
@@ -11,6 +13,7 @@ namespace BusinessLogic
         {
             return service
                 .AddScoped<IJobExecutionService, JobExecutionService>()
+                .AddScoped<ISendInBlueService,SendInBlueService>()
                 .AddScoped<IJobService, JobService>()
                 .AddRepos();
         }
