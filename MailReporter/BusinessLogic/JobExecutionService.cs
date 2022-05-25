@@ -1,37 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using DomainModel;
-using DomainModel.DTO;
-using Microsoft.Extensions.Configuration;
-using Repos;
-
-namespace BusinessLogic
+﻿namespace BusinessLogic
 {
-    public interface IJobExecutionService
-    {
-        Task<IEnumerable<JobOverview>> GetOverview();
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text.RegularExpressions;
+    using System.Threading.Tasks;
 
-        Task<long> MigrateData(string oldname, string newname, string newJobId);
+    using BusinessLogic.Interfaces;
 
-        Task<JobExecution> ConvertMailToJobExecution(NotificationEmail mail);
+    using DomainModel;
+    using DomainModel.DTO;
 
-        Task Create(JobExecution jobExecution);
+    using Microsoft.Extensions.Configuration;
 
-        Task<int> ReclassifyUnclassified();
-    }
+    using Repos;
 
     public class JobExecutionService : IJobExecutionService
     {
         private readonly IJobExecutionRepo _jobExecutionRepo;
-
         private readonly IJobRepo _jobRepo;
-
         private readonly IConfiguration _configuration;
-
         private IEnumerable<Job> _allJobs;
 
         public JobExecutionService(IJobRepo jobRepo, IJobExecutionRepo jobExecutionRepo, IConfiguration configuration)
@@ -43,15 +31,17 @@ namespace BusinessLogic
 
         public async Task<IEnumerable<JobOverview>> GetOverview()
         {
-            if(_allJobs == null)
+            if (_allJobs == null)
+            {
                 _allJobs = await _jobRepo.GetAll();
+            }
 
             var jobOverviews = new List<JobOverview>();
 
             foreach (var job in _allJobs)
             {
-                var lastExecutions = (job.Id != null) 
-                    ? (await _jobExecutionRepo.GetLastExecutionsById(job.Id, 5)).ToList() 
+                var lastExecutions = (job.Id != null)
+                    ? (await _jobExecutionRepo.GetLastExecutionsById(job.Id, 5)).ToList()
                     : (await _jobExecutionRepo.GetLastExecutionsByName(job.Name, 5)).ToList();
                 var lastExecution = lastExecutions.FirstOrDefault();
                 var lastRun = lastExecutions.FirstOrDefault()?.Finished;
@@ -62,7 +52,7 @@ namespace BusinessLogic
                     LastExecutions = lastExecutions,
                     LastRun = lastRun,
                     NextRun = lastRun != null ? lastRun + job.ExpectedInterval : null,
-                    IsDue = lastRun != null ?  lastRun + job.ExpectedInterval < DateTime.UtcNow : false,
+                    IsDue = lastRun != null ? lastRun + job.ExpectedInterval < DateTime.UtcNow : false,
                     LastStatus = lastExecution != null ? lastExecution.Status : DomainModel.JobExecutionStatus.Unknown,
                 });
             }
@@ -83,7 +73,7 @@ namespace BusinessLogic
             };
 
             // Determine matching job
-            Job job = await ClassifyExecution(jobExecution);
+            var job = await ClassifyExecution(jobExecution);
 
             jobExecution.JobId = job.Id;
             jobExecution.JobName = job.Name;
@@ -98,7 +88,9 @@ namespace BusinessLogic
         private async Task<Job> ClassifyExecution(JobExecution jobExecution)
         {
             if (_allJobs == null)
+            {
                 _allJobs = await _jobRepo.GetAll();
+            }
 
             // Determine matching job
             Job job = null;
@@ -107,13 +99,16 @@ namespace BusinessLogic
             var sender = jobExecution.NotificationEmail.Sender;
             if (!string.IsNullOrWhiteSpace(sender))
             {
-                job = _allJobs.Where(j => j.EmailSender != null).FirstOrDefault(j => j.EmailSender.Equals(sender.Trim(), StringComparison.InvariantCultureIgnoreCase));
+                job = _allJobs.Where(j => j.EmailSender != null)
+                    .FirstOrDefault(j => j.EmailSender.Equals(sender.Trim(), StringComparison.InvariantCultureIgnoreCase));
             }
 
             // Match by subject regex
             if (job == null)
             {
-                var jobs = _allJobs.Where(j => !string.IsNullOrWhiteSpace(j.SubjectRegex) && Regex.IsMatch(jobExecution.OriginalSubject, j.SubjectRegex));
+                var jobs = _allJobs.Where(j => !string.IsNullOrWhiteSpace(j.SubjectRegex) &&
+                    Regex.IsMatch(jobExecution.OriginalSubject, j.SubjectRegex));
+
                 if (jobs.Count() > 1)
                 {
                     job = new Job { Name = "Ambiguous Subject RegEx: " + string.Join(" ,", jobs.Select(j => j.Name)) };
@@ -142,58 +137,46 @@ namespace BusinessLogic
 
         private JobExecutionStatus DetermineJobStatus(JobExecution jobExecution, Job job)
         {
-            JobExecutionStatus status;
-            // determine the status
             var errorWords = _configuration["ErrorWords"].Split(',').Select(w => w.Trim()).Where(w => !string.IsNullOrWhiteSpace(w)).ToList();
             var successWords = _configuration["SuccessWords"].Split(',').Select(w => w.Trim()).Where(w => !string.IsNullOrWhiteSpace(w)).ToList(); ;
 
             if (!errorWords.Any() || !successWords.Any())
+            {
                 throw new InvalidOperationException("SuccessWords or ErrorWords not properly defined in the config.");
+            }
 
-            if (job.ErrorSubjectRegex != null && job.SuccessSubjectRegex != null)
+            var hasRegex = job.ErrorSubjectRegex != null && job.SuccessSubjectRegex != null;
+
+            if (hasRegex)
             {
                 if (job.ErrorSubjectRegex != null && Regex.IsMatch(jobExecution.OriginalSubject, job.ErrorSubjectRegex))
                 {
-                    status = JobExecutionStatus.Error;
+                    return JobExecutionStatus.Error;
                 }
-                else if (job.SuccessSubjectRegex != null && Regex.IsMatch(jobExecution.OriginalSubject, job.SuccessSubjectRegex))
-                {
-                    status = JobExecutionStatus.Success;
-                }
-                else
-                {
-                    status = JobExecutionStatus.Unknown;
-                }
+
+                return job.SuccessSubjectRegex != null &&
+                    Regex.IsMatch(jobExecution.OriginalSubject, job.SuccessSubjectRegex) ?
+                    JobExecutionStatus.Success :
+                    JobExecutionStatus.Unknown;
             }
             else
             {
                 if (errorWords.Any(e => jobExecution.OriginalSubject.ToLowerInvariant().Contains(e)))
                 {
-                    status = JobExecutionStatus.Error;
+                    return JobExecutionStatus.Error;
                 }
-                else if (successWords.Any(s => jobExecution.OriginalSubject.ToLowerInvariant().Contains(s)))
-                {
-                    status = JobExecutionStatus.Success;
-                }
-                else
-                {
-                    status = JobExecutionStatus.Unknown;
-                }
+
+                return successWords.Any(s => jobExecution.OriginalSubject.ToLowerInvariant().Contains(s)) ?
+                    JobExecutionStatus.Success :
+                    JobExecutionStatus.Unknown;
             }
-
-            return status;
         }
 
-        public async Task Create(JobExecution jobExecution)
-        {
+        public async Task Create(JobExecution jobExecution) =>
             await _jobExecutionRepo.Create(jobExecution);
-        }
 
-
-        public async Task<long> MigrateData(string oldname, string newname, string newJobId)
-        {
-            return await _jobExecutionRepo.MigrateData(oldname, newname, newJobId);
-        }
+        public async Task<long> MigrateData(string oldname, string newname, string newJobId) =>
+            await _jobExecutionRepo.MigrateData(oldname, newname, newJobId);
 
         public async Task<int> ReclassifyUnclassified()
         {

@@ -1,8 +1,12 @@
 using BusinessLogic.Implementations;
 using BusinessLogic.Interfaces;
+
 using Moq;
+
 using Newtonsoft.Json.Linq;
+
 using NUnit.Framework;
+
 using System.IO;
 using System.Threading.Tasks;
 
@@ -14,6 +18,7 @@ namespace BusinessLogic.Tests
         ISendInBlueService _sendInBlueService;
         private readonly Mock<IJobExecutionService> _jobExecutionService = new Mock<IJobExecutionService>();
         JObject _sendInBluePayload;
+
         [SetUp]
         public void Setup()
         {

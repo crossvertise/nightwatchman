@@ -1,11 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Mvc.Attributes
+﻿namespace Mvc.Attributes
 {
+    using Microsoft.AspNetCore.Mvc;
+
+    using System;
+
     /// <summary>
     /// https://codeburst.io/adding-basic-authentication-to-an-asp-net-core-web-api-project-5439c4cf78ee
     /// </summary>

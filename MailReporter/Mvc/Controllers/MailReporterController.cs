@@ -1,20 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using BusinessLogic;
-using BusinessLogic.Interfaces;
-using DomainModel;
-using Mandrill.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Mvc.Attributes;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
-namespace Mvc.Controllers
+﻿namespace Mvc.Controllers
 {
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+
+    using BusinessLogic.Interfaces;
+
+    using DomainModel;
+
+    using Mandrill.Models;
+
+    using Microsoft.AspNetCore.Authorization;
+    using Microsoft.AspNetCore.Mvc;
+
+    using Mvc.Attributes;
+
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+
     public class MailReporterController : Controller
     {
         private readonly IJobExecutionService _jobExecutionService;
@@ -31,54 +34,47 @@ namespace Mvc.Controllers
         [MandrillWebhook(KeyAppSetting = "MandrillWebhookKey")]
         public async Task<IActionResult> Mandrill()
         {
-            var req = HttpContext.Request;
-            try
+            var request = HttpContext.Request;
+            if (request.Method.ToUpper() == "HEAD")
             {
-                if (req.Method.ToUpper() == "HEAD")
-                {
-                    return new OkObjectResult("Hello Mandrill!");
-                }
-
-                if (!req.HasFormContentType)
-                {
-                    return new BadRequestObjectResult("No form content received");
-                }
-                var content = req.Form;
-                var validJson = content["mandrill_events"].First().Replace("mandrill_events =", string.Empty);
-
-                if (string.IsNullOrWhiteSpace(validJson))
-                {
-                    return new BadRequestObjectResult("No valid JSON found");
-                }
-
-                var webhookEvents = JsonConvert.DeserializeObject<List<WebHookEvent>>(validJson);
-                if (webhookEvents == null)
-                {
-                    return new BadRequestObjectResult("No webhook events found");
-                }
-         
-                foreach (var webhookEvent in webhookEvents)
-                {
-                    var msg = webhookEvent.Msg;
-                    var mail = new NotificationEmail
-                    {
-                        Sender = msg.FromEmail,
-                        Subject = msg.Subject,
-
-                        BodyHtml = msg.Html,
-                        BodyText = msg.Text,
-                    };
-
-                    var jobExecution = await _jobExecutionService.ConvertMailToJobExecution(mail);
-                    
-                    await _jobExecutionService.Create(jobExecution);
-
-                }
+                return new OkObjectResult("Hello Mandrill!");
             }
-            catch (Exception e)
+
+            if (!request.HasFormContentType)
             {
-                throw;
+                return new BadRequestObjectResult("No form content received");
             }
+
+            var content = request.Form;
+            var validJson = content["mandrill_events"].First().Replace("mandrill_events =", string.Empty);
+
+            if (string.IsNullOrWhiteSpace(validJson))
+            {
+                return new BadRequestObjectResult("No valid JSON found");
+            }
+
+            var webhookEvents = JsonConvert.DeserializeObject<List<WebHookEvent>>(validJson);
+            if (webhookEvents == null)
+            {
+                return new BadRequestObjectResult("No webhook events found");
+            }
+
+            foreach (var message in webhookEvents.Select(we => we.Msg))
+            {
+                var mail = new NotificationEmail
+                {
+                    Sender = message.FromEmail,
+                    Subject = message.Subject,
+
+                    BodyHtml = message.Html,
+                    BodyText = message.Text,
+                };
+
+                var jobExecution = await _jobExecutionService.ConvertMailToJobExecution(mail);
+
+                await _jobExecutionService.Create(jobExecution);
+            }
+
             return new OkObjectResult("Event processed successfully");
         }
 
@@ -86,15 +82,7 @@ namespace Mvc.Controllers
         [HttpPost]
         public async Task<IActionResult> SendInBlue([FromBody] JObject payload)
         {
-            var req = HttpContext.Request;
-            try
-            {
-                await _sendInBlueService.ProcessEvent(payload);
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
+            await _sendInBlueService.ProcessEvent(payload);
             return new OkObjectResult("Event processed successfully");
         }
     }

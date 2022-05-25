@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace DomainModel.DTO.PRTG
+﻿namespace DomainModel.DTO.PRTG
 {
+    using System.Collections.Generic;
+
     public class PrtgResult
     {
         public Prtg Prtg { get; set; }

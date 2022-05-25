@@ -1,20 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using BusinessLogic;
-using DomainModel.DTO.PRTG;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Mvc.Attributes;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-
-namespace Mvc.Controllers
+﻿namespace Mvc.Controllers
 {
+    using System;
+    using System.Linq;
+    using System.Threading.Tasks;
+
+    using BusinessLogic.Interfaces;
+
+    using DomainModel.DTO.PRTG;
+
+    using Microsoft.AspNetCore.Authorization;
+    using Microsoft.AspNetCore.Mvc;
+
+    using Mvc.Attributes;
+
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
+
     public class DashboardController : Controller
     {
-        private IJobExecutionService _jobStatusService;
+        private readonly IJobExecutionService _jobStatusService;
 
         public DashboardController(IJobExecutionService jobStatusService)
         {
@@ -24,7 +28,6 @@ namespace Mvc.Controllers
         public async Task<IActionResult> Index()
         {
             var overview = await _jobStatusService.GetOverview();
-
             return View(overview);
         }
 
@@ -34,7 +37,8 @@ namespace Mvc.Controllers
         {
             var overview = await _jobStatusService.GetOverview();
 
-            var prtg = new PrtgResult {
+            var prtg = new PrtgResult
+            {
                 Prtg = new Prtg
                 {
                     Result = overview.Where(o => o.LastRun != null).Select(o => new PrtgChannel

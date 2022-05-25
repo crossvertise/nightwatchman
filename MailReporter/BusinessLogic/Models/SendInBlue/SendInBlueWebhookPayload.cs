@@ -1,8 +1,9 @@
 ﻿namespace BusinessLogic.Models.SendInBlue
 {
     using System.Collections.Generic;
+
     using Newtonsoft.Json;
-    
+
     public class SendInBlueWebhookPayload
     {
         [JsonProperty("items")]

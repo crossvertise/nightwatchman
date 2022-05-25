@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace DomainModel.DTO
+﻿namespace DomainModel.DTO
 {
+    using System;
+    using System.Collections.Generic;
+
     public class JobOverview
     {
         public Job Job { get; set; }

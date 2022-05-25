@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.IdGenerators;
-
-namespace DomainModel
+﻿namespace DomainModel
 {
+    using System;
+
+    using MongoDB.Bson.Serialization.Attributes;
+    using MongoDB.Bson.Serialization.IdGenerators;
+
     public class JobExecution
     {
         [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]

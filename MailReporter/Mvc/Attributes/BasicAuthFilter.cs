@@ -1,17 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Mvc.Attributes
+﻿namespace Mvc.Attributes
 {
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc.Filters;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
+
+    using System;
+    using System.Net;
+    using System.Net.Http.Headers;
+    using System.Text;
+
     public class BasicAuthFilter : IAuthorizationFilter
     {
         private readonly string _realm;
@@ -38,12 +36,11 @@ namespace Mvc.Attributes
                         var credentials = Encoding.UTF8
                             .GetString(Convert.FromBase64String(authHeaderValue.Parameter ?? string.Empty))
                             .Split(':', 2);
-                        if (credentials.Length == 2)
+
+                        if (credentials.Length == 2 &&
+                            IsAuthorized(context, credentials[0], credentials[1]))
                         {
-                            if (IsAuthorized(context, credentials[0], credentials[1]))
-                            {
-                                return;
-                            }
+                            return;
                         }
                     }
                 }
@@ -58,7 +55,6 @@ namespace Mvc.Attributes
 
         public bool IsAuthorized(AuthorizationFilterContext context, string username, string password)
         {
-            
             var configuration = context.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
             var credentials = configuration["BasicAuthCredentials"];
 

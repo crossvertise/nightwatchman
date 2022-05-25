@@ -1,10 +1,10 @@
-﻿using System;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.IdGenerators;
-
-namespace DomainModel
+﻿namespace DomainModel
 {
+    using System;
+
+    using MongoDB.Bson.Serialization.Attributes;
+    using MongoDB.Bson.Serialization.IdGenerators;
+
     public class Job
     {
         [BsonId(IdGenerator = typeof(StringObjectIdGenerator))]
@@ -27,6 +27,5 @@ namespace DomainModel
         public string ErrorBodyRegex { get; set; }
 
         public TimeSpan ExpectedInterval { get; set; }
-
     }
 }

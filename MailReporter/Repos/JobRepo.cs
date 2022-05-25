@@ -1,15 +1,14 @@
-﻿using DomainModel;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-
-namespace Repos
+﻿namespace Repos
 {
+    using DomainModel;
+
+    using Microsoft.Extensions.Configuration;
+
+    using System;
+
     public class JobRepo : AMongoRepo<Job>, IJobRepo
     {
-        public JobRepo(IConfiguration configuration) : base(configuration)
-        {
-        }
+        public JobRepo(IConfiguration configuration) : base(configuration) { }
 
         protected override Func<Job, string> IdProperty => (j => j.Id);
     }
