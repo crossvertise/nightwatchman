@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using DomainModel;
-
-namespace Repos
+﻿namespace Repos
 {
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
+    using DomainModel;
+
     public interface IJobExecutionRepo
     {
         Task<IList<JobExecution>> GetLastExecutionsByName(string jobName, int limit = 3);

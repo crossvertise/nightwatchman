@@ -1,5 +1,15 @@
 ﻿@model DomainModel.Job
 
+<style type="text/css">
+    label {
+        width: 180px;
+        float: left;
+    }
+
+    .form-control {
+        width: calc(60% - 180px);
+    }
+</style>
 @{
     ViewData["Title"] = "View";
 }
@@ -9,7 +19,7 @@
 <h4>Job</h4>
 <hr />
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-12">
         <form asp-action="Create">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 

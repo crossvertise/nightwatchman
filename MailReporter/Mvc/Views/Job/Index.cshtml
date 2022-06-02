@@ -1,15 +1,15 @@
 ﻿@model IEnumerable<DomainModel.Job>
 
 @{
-    ViewData["Title"] = "View";
+    ViewData["Title"] = "Jobs";
 }
 
-<h2>View</h2>
+<h2>@ViewData["Title"]</h2>
 
 <p>
     <a asp-action="Create">Create New</a>
 </p>
-<table class="table">
+<table class="table table-striped table-bordered table-hover">
     <thead>
         <tr>
             <th>

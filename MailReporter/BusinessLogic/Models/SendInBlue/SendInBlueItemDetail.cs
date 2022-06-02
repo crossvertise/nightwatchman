@@ -1,7 +1,5 @@
 ﻿namespace BusinessLogic.Models.SendInBlue
 {
-    using Newtonsoft.Json;
-
     public class SendInBlueItemDetail
     {
         public string[] Uuid { get; set; }

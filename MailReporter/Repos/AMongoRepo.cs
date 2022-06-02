@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using MongoDB.Driver;
-
-namespace Repos
+﻿namespace Repos
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
+    using Microsoft.Extensions.Configuration;
+
+    using MongoDB.Driver;
+
     public abstract class AMongoRepo<T>
     {
         protected IMongoClient Client { get; set; }
@@ -17,15 +18,7 @@ namespace Repos
 
         protected abstract Func<T, string> IdProperty { get; }
 
-        //protected AMongoRepo()
-        //{
-            
-        //    Client = new MongoClient();
-        //    Database = Client.GetDatabase("asd");
-        //    Collection = Database.GetCollection<T>(nameof(T));
-        //}
-
-        public AMongoRepo(string connectionString, string databaseName)
+        protected AMongoRepo(string connectionString, string databaseName)
         {
 
             Client = new MongoClient(connectionString);
@@ -33,20 +26,14 @@ namespace Repos
             Collection = Database.GetCollection<T>(typeof(T).Name);
         }
 
-        public AMongoRepo(IConfiguration configuration) 
+        protected AMongoRepo(IConfiguration configuration)
             : this(configuration["MongoDbConnectionString"], configuration["MongoDbDatabaseName"])
         {
         }
 
-        public async Task Create(T item)
-        {
-            await Collection.InsertOneAsync(item);
-        }
+        public async Task Create(T item) => await Collection.InsertOneAsync(item);
 
-        public async Task CreateMany(IEnumerable<T> items)
-        {
-            await Collection.InsertManyAsync(items);
-        }
+        public async Task CreateMany(IEnumerable<T> items) => await Collection.InsertManyAsync(items);
 
         public async Task Update(T item)
         {

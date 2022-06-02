@@ -1,66 +1,62 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
-
-namespace Mvc.Attributes
+﻿namespace Mvc.Attributes
 {
+    using Microsoft.AspNetCore.Http;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc.Filters;
+    using Microsoft.Extensions.Configuration;
+    using Microsoft.Extensions.DependencyInjection;
+
+    using System;
+    using System.Linq;
+    using System.Security.Cryptography;
+    using System.Text;
+
     public class MandrillWebhookAttribute : ActionFilterAttribute
     {
         public string Key { get; set; }
 
         public string KeyAppSetting { get; set; }
- 
-        public override void OnActionExecuting(ActionExecutingContext filterContext)
+
+        public override void OnActionExecuting(ActionExecutingContext context)
         {
-            if (filterContext.HttpContext.Request.Method == "HEAD")
+            if (context.HttpContext.Request.Method == "HEAD")
             {
-                base.OnActionExecuting(filterContext);
+                base.OnActionExecuting(context);
                 return;
             }
-                
-            if(Key == null)
+
+            if (Key == null)
             {
-                var configuration = filterContext.HttpContext.RequestServices.GetService<IConfiguration>();
+                var configuration = context.HttpContext.RequestServices.GetService<IConfiguration>();
                 Key = configuration[this.KeyAppSetting];
             }
 
-            var request = filterContext.HttpContext.Request;
+            var request = context.HttpContext.Request;
             var requestUrl = $"{request.Scheme}://{request.Host}{request.Path}{request.QueryString}";
-            var signature = this.GenerateSignature(Key, requestUrl, filterContext.HttpContext.Request.Form);
+            var signature = this.GenerateSignature(Key, requestUrl, context.HttpContext.Request.Form);
 
-            var mandrillSignature = filterContext.HttpContext.Request.Headers.FirstOrDefault(h => h.Key == "X-Mandrill-Signature").Value.First();
+            var mandrillSignature = context.HttpContext.Request.Headers.FirstOrDefault(h => h.Key == "X-Mandrill-Signature").Value.First();
 
             if (mandrillSignature == null || mandrillSignature != signature)
             {
-                filterContext.Result = new UnauthorizedResult();
+                context.Result = new UnauthorizedResult();
             }
 
-            base.OnActionExecuting(filterContext);
+            base.OnActionExecuting(context);
         }
 
         private string GenerateSignature(string key, string url, IFormCollection form)
         {
-            var sourceString = url;
-            foreach (var kvp in form)
+            var sourceString = string.Concat(url,
+                string.Concat(form.Select(item => item.Key + item.Value)));
+
+            var keyBytes = Encoding.ASCII.GetBytes(key);
+            var valueBytes = Encoding.ASCII.GetBytes(sourceString);
+
+            using (var hmac = new HMACSHA1(keyBytes))
             {
-                sourceString += kvp.Key + kvp.Value;
+                return Convert.ToBase64String(hmac.ComputeHash(valueBytes));
             }
-
-            byte[] byteKey = System.Text.Encoding.ASCII.GetBytes(key);
-            byte[] byteValue = System.Text.Encoding.ASCII.GetBytes(sourceString);
-            HMACSHA1 myhmacsha1 = new HMACSHA1(byteKey);
-            byte[] hashValue = myhmacsha1.ComputeHash(byteValue);
-            string generatedSignature = Convert.ToBase64String(hashValue);
-
-            return generatedSignature;
         }
     }
 }

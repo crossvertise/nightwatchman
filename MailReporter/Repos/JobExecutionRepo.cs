@@ -1,21 +1,22 @@
-﻿using DomainModel;
-using Microsoft.Extensions.Configuration;
-using MongoDB.Driver;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Repos
+﻿namespace Repos
 {
+    using DomainModel;
+
+    using Microsoft.Extensions.Configuration;
+
+    using MongoDB.Driver;
+
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
     public class JobExecutionRepo : AMongoRepo<JobExecution>, IJobExecutionRepo
     {
         protected override Func<JobExecution, string> IdProperty => (j => j.Id);
 
-        public JobExecutionRepo(string connectionString, string databaseName) : base(connectionString, databaseName)
-        { }
+        public JobExecutionRepo(string connectionString, string databaseName) : base(connectionString, databaseName) { }
 
-        public JobExecutionRepo(IConfiguration configuration) : base(configuration)
-        { }
+        public JobExecutionRepo(IConfiguration configuration) : base(configuration) { }
 
         public async Task<IList<JobExecution>> GetLastExecutionsByName(string jobName, int limit = 3)
         {
