@@ -8,12 +8,11 @@
 
     using DomainModel;
 
-    using Mandrill.Models;
-
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
 
     using Mvc.Attributes;
+    using Mvc.Models;
 
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -53,7 +52,7 @@
                 return new BadRequestObjectResult("No valid JSON found");
             }
 
-            var webhookEvents = JsonConvert.DeserializeObject<List<WebHookEvent>>(validJson);
+            var webhookEvents = JsonConvert.DeserializeObject<List<MandrillWebhookEvent>>(validJson);
             if (webhookEvents == null)
             {
                 return new BadRequestObjectResult("No webhook events found");

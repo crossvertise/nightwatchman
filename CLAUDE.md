@@ -23,11 +23,10 @@ dotnet test    MailReporter/BusinessLogic.Tests/BusinessLogic.Tests.csproj
 dotnet test    MailReporter/BusinessLogic.Tests/BusinessLogic.Tests.csproj --filter "FullyQualifiedName~ProcessSendInBlueEvent_EmptyEvent"
 ```
 
-Achtung bei den Target Frameworks — sie sind bewusst gemischt und nicht angeglichen:
-`Mvc` = `netcoreapp2.1` (benötigt das .NET Core 2.1 SDK), `DomainModel`/`Repos`/`BusinessLogic` =
-`netstandard2.0`, `BusinessLogic.Tests` = `net6.0`. Deshalb lässt sich das Testprojekt mit einem
-modernen SDK bauen, die Web-App aber nur mit installiertem 2.1-SDK. `dotnet build` auf der
-kompletten Solution schlägt ohne 2.1-SDK fehl — dann projektweise bauen.
+Alle Projekte targeten einheitlich `net10.0`; `MailReporter/global.json` pinnt das SDK
+(`10.0.203`, `rollForward: latestFeature`). JSON läuft bewusst weiterhin über Newtonsoft.Json
+(`AddNewtonsoftJson()` in `Startup`) — `JObject` steckt in der `ISendInBlueService`-Signatur und
+der PRTG-Endpoint hängt an Newtonsoft-`JsonSerializerSettings` (camelCase, Nulls weggelassen).
 
 ## Architektur
 
