@@ -18,16 +18,26 @@ dotnet restore MailReporter/MailReporter.sln
 dotnet build   MailReporter/MailReporter.sln
 dotnet run     --project MailReporter/Mvc/Mvc.csproj
 
-dotnet test    MailReporter/BusinessLogic.Tests/BusinessLogic.Tests.csproj
+dotnet test    MailReporter/MailReporter.sln
 # Einzelner Test / Filter (NUnit):
 dotnet test    MailReporter/BusinessLogic.Tests/BusinessLogic.Tests.csproj --filter "FullyQualifiedName~ProcessSendInBlueEvent_EmptyEvent"
 ```
 
-Achtung bei den Target Frameworks — sie sind bewusst gemischt und nicht angeglichen:
-`Mvc` = `netcoreapp2.1` (benötigt das .NET Core 2.1 SDK), `DomainModel`/`Repos`/`BusinessLogic` =
-`netstandard2.0`, `BusinessLogic.Tests` = `net6.0`. Deshalb lässt sich das Testprojekt mit einem
-modernen SDK bauen, die Web-App aber nur mit installiertem 2.1-SDK. `dotnet build` auf der
-kompletten Solution schlägt ohne 2.1-SDK fehl — dann projektweise bauen.
+Zwei Testprojekte: `BusinessLogic.Tests` (Unit-Tests, Moq) und `Mvc.IntegrationTests`
+(fährt die komplette App per `WebApplicationFactory` gegen einen echten mongod hoch —
+EphemeralMongo lädt das Binary beim ersten Lauf herunter, braucht also einmalig Internet;
+der OIDC-Redirect-Test braucht Netz zu login.microsoftonline.com).
+
+Lokal ausführen: MongoDB z. B. via `docker run -d --name nightwatchman-mongo -p 27018:27017 mongo:8`
+(Port 27017 ist auf Dev-Maschinen oft belegt), dann die vier Secrets per
+`dotnet user-secrets set <Key> <Wert> --project MailReporter/Mvc/Mvc.csproj` setzen
+(`MongoDbConnectionString` = `mongodb://localhost:27018`, `MongoDbDatabaseName`,
+`MandrillWebhookKey`, `BasicAuthCredentials`).
+
+Alle Projekte targeten einheitlich `net10.0`; `MailReporter/global.json` pinnt das SDK
+(`10.0.203`, `rollForward: latestFeature`). JSON läuft bewusst weiterhin über Newtonsoft.Json
+(`AddNewtonsoftJson()` in `Startup`) — `JObject` steckt in der `ISendInBlueService`-Signatur und
+der PRTG-Endpoint hängt an Newtonsoft-`JsonSerializerSettings` (camelCase, Nulls weggelassen).
 
 ## Architektur
 

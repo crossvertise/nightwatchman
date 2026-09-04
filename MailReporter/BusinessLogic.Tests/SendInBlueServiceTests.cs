@@ -30,8 +30,8 @@ namespace BusinessLogic.Tests
         public async Task ProcessSendInBlueEvent()
         {
             var result = await _sendInBlueService.ProcessEvent(_sendInBluePayload);
-            Assert.IsTrue(result.IsSuccess);
-            Assert.IsEmpty(result.ErrorMessage);
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.ErrorMessage, Is.Empty);
         }
 
         [Test]
@@ -39,8 +39,8 @@ namespace BusinessLogic.Tests
         {
             _sendInBluePayload = new JObject();
             var result = await _sendInBlueService.ProcessEvent(_sendInBluePayload);
-            Assert.IsFalse(result.IsSuccess);
-            Assert.IsNotEmpty(result.ErrorMessage);
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.ErrorMessage, Is.Not.Empty);
         }
     }
 }
