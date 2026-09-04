@@ -74,6 +74,13 @@ jede neue Action ist standardmäßig geschützt. Ausnahmen brauchen explizit `[A
 (Format `user:password`) abgesichert und liefert PRTG-Kanäle mit den Sekunden bis zur nächsten
 erwarteten Ausführung.
 
+## Deployment
+
+Push auf `master` mit Änderungen unter `MailReporter/**` deployt automatisch per GitHub Actions
+(OIDC/Federated Credentials, keine Secrets) auf den Azure App Service `xv-nightwatchman-live` —
+self-contained win-x86, Test-Suite als Gate. Alle Details, Azure-Ids und das einmalige Setup
+stehen in `DEPLOYMENT.md`.
+
 ## Konfiguration
 
 `Mvc/appsettings.json` enthält bewusst leere Platzhalter für Secrets
