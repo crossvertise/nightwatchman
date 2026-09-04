@@ -1,0 +1,108 @@
+name: Deploy Nightwatchman to Azure
+
+# Build, Test & Deploy nach Azure App Service (Windows, xv-nightwatchman-live).
+#   push → master     → Build + Tests + Deploy
+#   workflow_dispatch → manueller Deploy
+#
+# Authentifizierung gegen Azure via OIDC/Federated Credentials über den zentralen
+# "Github Actions Service Principal" — KEINE Secrets, nur Repository-*Variablen*:
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+# Das Federated Credential ist an das GitHub-Environment "production" gebunden
+# (subject: repo:crossvertise/nightwatchman:environment:production).
+#
+# Publish erfolgt self-contained für win-x86 (32-bit-Worker des App Service),
+# damit das Deployment unabhängig von der auf App Service installierten
+# .NET-Runtime ist.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'MailReporter/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: xv-nightwatchman-live
+  AZURE_WEBAPP_PACKAGE_PATH: ./publish
+  CONFIGURATION: Release
+  SOLUTION_PATH: MailReporter/MailReporter.sln
+  PROJECT_PATH: MailReporter/Mvc/Mvc.csproj
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: MailReporter/global.json
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.CONFIGURATION }} --no-restore
+
+      # Unit- und Integrationstests. Die Integrationstests fahren die komplette App
+      # gegen einen echten mongod hoch (EphemeralMongo lädt das Binary herunter).
+      - name: Test
+        run: dotnet test ${{ env.SOLUTION_PATH }} --configuration ${{ env.CONFIGURATION }} --no-build
+
+      - name: Publish (self-contained win-x86)
+        run: dotnet publish ${{ env.PROJECT_PATH }} --configuration ${{ env.CONFIGURATION }} -r win-x86 --self-contained true --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webapp
+          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          retention-days: 7
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production
+      url: https://xv-nightwatchman-live.azurewebsites.net
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webapp
+          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      # Der Mandrill-HEAD-Endpoint ist anonym und dient als Health-Check.
+      - name: Smoke test
+        run: |
+          for i in $(seq 1 10); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -I https://xv-nightwatchman-live.azurewebsites.net/MailReporter/Mandrill || true)
+            echo "Attempt $i: HEAD /MailReporter/Mandrill -> $STATUS"
+            if [ "$STATUS" = "200" ]; then exit 0; fi
+            sleep 15
+          done
+          echo "Smoke test failed" && exit 1
