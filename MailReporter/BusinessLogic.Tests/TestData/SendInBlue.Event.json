@@ -5,13 +5,13 @@
       "MessageId": " <DB9PR05MB8748EDEF985889B8F742A141F9ED9@DB9PR05MB8748.eurprd05.prod.outlook.com>",
       "InReplyTo": " <DB9PR05MB874837924A0FE50270560AFBF9ED9@DB9PR05MB8748.eurprd05.prod.outlook.com>",
       "From": {
-        "Name": "Anuj Angooral",
-        "Address": "a.angooral@crossvertise.com"
+        "Name": "Jane Doe",
+        "Address": "sender@example.com"
       },
       "To": [
         {
           "Name": null,
-          "Address": "jvb@replydev.crossvertise.com"
+          "Address": "inbound@example.com"
         }
       ],
       "Cc": [],
@@ -45,12 +45,12 @@
         "MIMEVersion": null,
         "References": "<cb569200-ed82-486a-9e47-ece9d9930e6d@stau-msx2016.staudigl.local> <DB9PR05MB874837924A0FE50270560AFBF9ED9@DB9PR05MB8748.eurprd05.prod.outlook.com>",
         "InReplyTo": null,
-        "From": "Anuj Angooral <a.angooral@crossvertise.com>",
+        "From": "Jane Doe <sender@example.com>",
         "Date": "Tue, 12 Apr 2022 07:09:26 +0000",
         "XGmailOriginalMessageID": null,
         "MessageID": null,
         "Subject": "Druckfreigabeanforderung MOTIF_56249_47461_96396.PDF",
-        "To": "jvb@replydev.crossvertise.com",
+        "To": "inbound@example.com",
         "ContentType": null,
         "XZohoVirusStatus": null,
         "XZohoMailClient": null,

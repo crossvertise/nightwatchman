@@ -78,7 +78,7 @@ namespace Mvc.IntegrationTests
 
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK), body);
 
-            // Der PRTG-Sensor hängt am exakten Vertrag: camelCase-Keys, null-Werte weggelassen.
+            // The PRTG sensor depends on the exact contract: camelCase keys, null values omitted.
             var json = JObject.Parse(body);
             var channel = (JObject?)json["prtg"]?["result"]?.First;
             Assert.That(channel, Is.Not.Null, body);
@@ -90,7 +90,7 @@ namespace Mvc.IntegrationTests
             Assert.That(channel["limitMinError"]?.Value<int>(), Is.EqualTo((int)(-TimeSpan.FromHours(24).TotalSeconds * 0.1)));
             Assert.That(channel["limitMode"]?.Value<int>(), Is.EqualTo(1));
 
-            // NullValueHandling.Ignore: nicht gesetzte Limits dürfen nicht auftauchen.
+            // NullValueHandling.Ignore: limits that are not set must not appear.
             Assert.That(channel.ContainsKey("limitMaxError"), Is.False);
             Assert.That(channel.ContainsKey("limitMaxWarning"), Is.False);
         }

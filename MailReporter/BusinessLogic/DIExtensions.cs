@@ -13,6 +13,7 @@
                 .AddScoped<IJobExecutionService, JobExecutionService>()
                 .AddScoped<ISendInBlueService, SendInBlueService>()
                 .AddScoped<IJobService, JobService>()
+                .AddScoped<IJobStatusReportService, JobStatusReportService>()
                 .RegisterRepositories();
         }
     }

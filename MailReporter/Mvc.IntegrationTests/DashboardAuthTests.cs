@@ -22,7 +22,7 @@ namespace Mvc.IntegrationTests
             _factory.Dispose();
         }
 
-        /// <summary>Benötigt Internetzugriff (OIDC-Metadaten von login.microsoftonline.com).</summary>
+        /// <summary>Requires internet access (OIDC metadata from login.microsoftonline.com).</summary>
         [Test]
         public async Task Get_Dashboard_WithoutLogin_RedirectsToMicrosoftLogin()
         {

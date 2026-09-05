@@ -37,6 +37,12 @@
             return result.ModifiedCount;
         }
 
+        public async Task<IList<JobExecution>> GetExecutionsSince(DateTime sinceUtc, int limit)
+        {
+            var result = await Collection.Find(j => j.Finished >= sinceUtc).SortByDescending(j => j.Finished).Limit(limit).ToListAsync();
+            return result;
+        }
+
         public async Task<IList<JobExecution>> GetUnclassifiedJobs()
         {
             var result = await Collection.Find(j => j.JobName == null || j.JobName == "Unknown").SortByDescending(j => j.Started).Limit(1000).ToListAsync();
