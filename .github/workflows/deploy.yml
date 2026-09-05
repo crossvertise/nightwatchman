@@ -1,18 +1,17 @@
 name: Deploy Nightwatchman to Azure
 
-# Build, Test & Deploy nach Azure App Service (Windows, xv-nightwatchman-live).
-#   push → master     → Build + Tests + Deploy
-#   workflow_dispatch → manueller Deploy
+# Build, test & deploy to Azure App Service (Windows).
+#   push → master     → build + tests + deploy
+#   workflow_dispatch → manual deploy
 #
-# Authentifizierung gegen Azure via OIDC/Federated Credentials über den zentralen
-# "Github Actions Service Principal" — KEINE Secrets, nur Repository-*Variablen*:
-#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
-# Das Federated Credential ist an das GitHub-Environment "production" gebunden
-# (subject: repo:crossvertise/nightwatchman:environment:production).
+# Authenticates against Azure via OIDC/Federated Credentials through the central
+# GitHub Actions service principal — NO secrets, only repository *variables*:
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_WEBAPP_NAME, AZURE_WEBAPP_URL
+# The federated credential is bound to the GitHub environment "production".
 #
-# Publish erfolgt self-contained für win-x86 (32-bit-Worker des App Service),
-# damit das Deployment unabhängig von der auf App Service installierten
-# .NET-Runtime ist.
+# Publish is self-contained for win-x86 (32-bit worker of the App Service),
+# so the deployment does not depend on the .NET runtime installed on the
+# App Service.
 
 on:
   push:
@@ -23,7 +22,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: xv-nightwatchman-live
+  AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
   AZURE_WEBAPP_PACKAGE_PATH: ./publish
   CONFIGURATION: Release
   SOLUTION_PATH: MailReporter/MailReporter.sln
@@ -55,8 +54,8 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.CONFIGURATION }} --no-restore
 
-      # Unit- und Integrationstests. Die Integrationstests fahren die komplette App
-      # gegen einen echten mongod hoch (EphemeralMongo lädt das Binary herunter).
+      # Unit and integration tests. The integration tests spin up the complete app
+      # against a real mongod (EphemeralMongo downloads the binary).
       - name: Test
         run: dotnet test ${{ env.SOLUTION_PATH }} --configuration ${{ env.CONFIGURATION }} --no-build
 
@@ -75,7 +74,7 @@ jobs:
     needs: build
     environment:
       name: production
-      url: https://xv-nightwatchman-live.azurewebsites.net
+      url: ${{ vars.AZURE_WEBAPP_URL }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -96,11 +95,11 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
-      # Der Mandrill-HEAD-Endpoint ist anonym und dient als Health-Check.
+      # The Mandrill HEAD endpoint is anonymous and serves as a health check.
       - name: Smoke test
         run: |
           for i in $(seq 1 10); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -I https://xv-nightwatchman-live.azurewebsites.net/MailReporter/Mandrill || true)
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" -I ${{ vars.AZURE_WEBAPP_URL }}/MailReporter/Mandrill || true)
             echo "Attempt $i: HEAD /MailReporter/Mandrill -> $STATUS"
             if [ "$STATUS" = "200" ]; then exit 0; fi
             sleep 15

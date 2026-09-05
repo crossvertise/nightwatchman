@@ -13,6 +13,10 @@ namespace Mvc
     using Microsoft.Extensions.Hosting;
     using Microsoft.Identity.Web;
 
+    using ModelContextProtocol.AspNetCore;
+
+    using Mvc.Mcp;
+
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -30,8 +34,18 @@ namespace Mvc
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-                .AddMicrosoftIdentityWebApp(Configuration.GetSection("AzureAd"));
+            var authenticationBuilder = services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme);
+            authenticationBuilder.AddMicrosoftIdentityWebApp(Configuration.GetSection("AzureAd"));
+            authenticationBuilder.AddMcpAuthentication(Configuration);
+
+            services.AddMcpAuthorization(Configuration);
+
+            services.AddHttpClient();
+
+            services.AddMcpServer()
+                .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless)
+                .WithToolsFromAssembly()
+                .WithPromptsFromAssembly();
 
             services.AddControllersWithViews(options =>
             {
@@ -57,6 +71,19 @@ namespace Mvc
                 app.UseHsts();
             }
 
+            // Honour X-Forwarded-Proto from the hosting front end so the OAuth metadata
+            // advertises https:// and not the internal http:// origin.
+            app.Use((context, next) =>
+            {
+                var proto = context.Request.Headers["X-Forwarded-Proto"].ToString();
+                if (!string.IsNullOrEmpty(proto))
+                {
+                    context.Request.Scheme = proto.Split(',')[0].Trim();
+                }
+
+                return next();
+            });
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
@@ -68,6 +95,13 @@ namespace Mvc
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+                // Anonymous OAuth metadata / proxy endpoints required by MCP clients.
+                endpoints.MapMcpOAuthProxy(Configuration);
+
+                // Minimal API endpoint — the global MVC AuthorizeFilter does not apply here,
+                // so the MCP policy is attached explicitly.
+                endpoints.MapMcp("/mcp").RequireAuthorization(McpAuthExtensions.PolicyName);
             });
         }
     }

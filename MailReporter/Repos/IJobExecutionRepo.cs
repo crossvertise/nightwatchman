@@ -1,5 +1,6 @@
 ﻿namespace Repos
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
@@ -18,5 +19,7 @@
         Task Update(JobExecution jobExecution);
 
         Task<IList<JobExecution>> GetUnclassifiedJobs();
+
+        Task<IList<JobExecution>> GetExecutionsSince(DateTime sinceUtc, int limit);
     }
 }

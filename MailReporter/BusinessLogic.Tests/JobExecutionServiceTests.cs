@@ -49,10 +49,10 @@ namespace BusinessLogic.Tests
         {
             var service = CreateService(new List<Job>
             {
-                new Job { Id = "1", Name = "EtlJob", EmailSender = "etl@crossvertise.com" },
+                new Job { Id = "1", Name = "EtlJob", EmailSender = "etl@example.com" },
             });
 
-            var execution = await service.ConvertMailToJobExecution(Mail(" ETL@Crossvertise.com ", "ETL run completed"));
+            var execution = await service.ConvertMailToJobExecution(Mail(" ETL@Example.com ", "ETL run completed"));
 
             Assert.That(execution.JobId, Is.EqualTo("1"));
             Assert.That(execution.JobName, Is.EqualTo("EtlJob"));
@@ -63,11 +63,11 @@ namespace BusinessLogic.Tests
         {
             var service = CreateService(new List<Job>
             {
-                new Job { Id = "1", Name = "SenderJob", EmailSender = "etl@crossvertise.com" },
+                new Job { Id = "1", Name = "SenderJob", EmailSender = "etl@example.com" },
                 new Job { Id = "2", Name = "SubjectJob", SubjectContains = "ETL" },
             });
 
-            var execution = await service.ConvertMailToJobExecution(Mail("etl@crossvertise.com", "ETL run completed"));
+            var execution = await service.ConvertMailToJobExecution(Mail("etl@example.com", "ETL run completed"));
 
             Assert.That(execution.JobName, Is.EqualTo("SenderJob"));
         }

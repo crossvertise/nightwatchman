@@ -3,8 +3,8 @@ using EphemeralMongo;
 namespace Mvc.IntegrationTests
 {
     /// <summary>
-    /// Startet einmal pro Testlauf einen echten mongod-Prozess (EphemeralMongo lädt das
-    /// Binary beim ersten Lauf herunter). Jede Fixture nutzt eine eigene Datenbank.
+    /// Starts a real mongod process once per test run (EphemeralMongo downloads the
+    /// binary on first use). Each fixture uses its own database.
     /// </summary>
     [SetUpFixture]
     public class GlobalMongoSetup

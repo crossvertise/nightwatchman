@@ -82,7 +82,7 @@ namespace Mvc.IntegrationTests
             Assert.That(count, Is.Zero);
         }
 
-        /// <summary>Bildet die HMAC-SHA1-Signatur exakt wie MandrillWebhookAttribute.GenerateSignature.</summary>
+        /// <summary>Computes the HMAC-SHA1 signature exactly like MandrillWebhookAttribute.GenerateSignature.</summary>
         private static string ComputeSignature(string url, IReadOnlyDictionary<string, string> form)
         {
             var sourceString = url + string.Concat(form.Select(item => item.Key + item.Value));

@@ -1,84 +1,106 @@
 # Deployment
 
-Nightwatchman wird per GitHub Actions ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml))
-auf den Azure App Service **`xv-nightwatchman-live`** deployt.
+Nightwatchman is deployed via GitHub Actions
+([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) to an Azure App Service
+(Windows).
 
-## Ablauf
+## Flow
 
-- **Trigger:** Push auf `master` mit Änderungen unter `MailReporter/**` (oder am Workflow selbst),
-  außerdem manuell per `workflow_dispatch`.
-- **Build-Job:** Restore, Build und die komplette Test-Suite (Unit + Integration, siehe CLAUDE.md)
-  als Gate. Danach `dotnet publish` **self-contained für `win-x86`** — der App Service ist Windows
-  mit 32-Bit-Worker, und self-contained macht das Deployment unabhängig von der dort installierten
-  .NET-Runtime (das Portal-Stack-Setting ist deshalb irrelevant).
-- **Deploy-Job:** läuft im GitHub-Environment `production`, deployt per `azure/webapps-deploy@v3`
-  und prüft anschließend den anonymen Health-Check `HEAD /MailReporter/Mandrill` (Smoke-Test).
+- **Trigger:** push to `master` with changes under `MailReporter/**` (or to the workflow
+  itself), plus manual runs via `workflow_dispatch`.
+- **Build job:** restore, build, and the full test suite (unit + integration, see
+  [CLAUDE.md](CLAUDE.md)) as a gate. Then `dotnet publish` **self-contained for `win-x86`** —
+  the target App Service plan is a Windows 32-bit worker, and publishing self-contained makes
+  the deployment independent of whatever .NET runtime happens to be installed on the App
+  Service (the portal's "Stack settings" become irrelevant).
+- **Deploy job:** runs in the GitHub environment `production`, deploys via
+  `azure/webapps-deploy@v3`, then checks the anonymous health check
+  `HEAD /MailReporter/Mandrill` as a smoke test.
 
-## Azure-Ressourcen
+## Authentication: OIDC / Federated Identity Credentials
 
-| Was | Wert |
+The workflow authenticates against Azure **without secrets**, via a federated credential on an
+existing App Registration (a "GitHub Actions service principal") that is bound to the GitHub
+environment `production`.
+
+Required **repository variables** (Settings → Secrets and variables → Actions → Variables — not
+secrets):
+
+| Variable | Description |
 |---|---|
-| App Service | `xv-nightwatchman-live` (Windows, 32-Bit-Worker) |
-| Resource Group | `nightwatchman-live` |
-| Subscription | „Crossvertise Playground Dev/Test" — `b6ba45e2-3816-44b0-ba54-78f080dc57d2` |
-| URL | https://xv-nightwatchman-live.azurewebsites.net |
+| `AZURE_CLIENT_ID` | App registration (client id) used for OIDC login |
+| `AZURE_TENANT_ID` | Azure AD tenant id |
+| `AZURE_SUBSCRIPTION_ID` | Subscription containing the target App Service |
+| `AZURE_WEBAPP_NAME` | Name of the target App Service |
+| `AZURE_WEBAPP_URL` | Public URL of the App Service, used for the environment link and the smoke test |
 
-Die App-Secrets (`MongoDbConnectionString`, `MongoDbDatabaseName`, `MandrillWebhookKey`,
-`BasicAuthCredentials`, `SuccessWords`/`ErrorWords`) liegen als **App Settings direkt am App
-Service** — nicht in GitHub.
+## App settings on the App Service
 
-## Authentifizierung: OIDC / Federated Identity Credentials
+The application's configuration is supplied as **App Service application settings** (not
+checked into the repo, not GitHub secrets). Nested configuration sections use the `Key__SubKey`
+naming convention:
 
-Der Workflow authentifiziert sich **ohne Secrets** über den org-weiten
-**„Github Actions Service Principal"** (gleiches Muster wie ServiceBusAuditor, powerbi-mcp, crm-mcp):
-
-| Was | Wert |
+| Setting | Purpose |
 |---|---|
-| App Registration (Client-Id) | `c1c157eb-d4c5-4288-b9b1-5615b9a4c832` |
-| Service Principal (Object-Id) | `2f7e0cec-9d48-4379-8f7a-f5ca8e51c4d1` |
-| Tenant | `70470a10-c0d1-4c3b-a249-d43d39407fd9` |
-| Federated Credential | `Github-crossvertise-nightwatchman-production-FederatedCredential`, Subject `repo:crossvertise/nightwatchman:environment:production` |
-| RBAC | **Website Contributor**, nur auf die RG `nightwatchman-live` (Least Privilege) |
+| `MongoDbConnectionString` | MongoDB connection string |
+| `MongoDbDatabaseName` | Database name |
+| `MandrillWebhookKey` | HMAC signing key for the Mandrill webhook |
+| `BasicAuthCredentials` | `user:password` for the PRTG endpoint |
+| `SuccessWords` | Fallback success-classification word list |
+| `ErrorWords` | Fallback error-classification word list |
+| `AzureAd__TenantId` | Entra tenant id, for the dashboard sign-in |
+| `AzureAd__ClientId` | App registration for the dashboard sign-in (OIDC) |
+| `AzureAd__Domain` | Verified domain of the Entra tenant |
+| `McpAuth__ClientId` | Public-client app registration for MCP clients |
+| `McpAuth__ApiClientId` | Resource/API app registration for the `/mcp` token audience |
 
-Im Repo sind dazu nur drei **Actions-Variablen** (keine Secrets) konfiguriert:
-`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`.
+See [docs/entra-setup.md](docs/entra-setup.md) for how to create the underlying Entra app
+registrations, and [README.md](README.md#configuration) for the full configuration reference.
 
-## Einmaliges Setup (bereits erledigt, zur Reproduktion)
+## One-time setup (reference)
+
+Adjust the placeholders (`<...>`) to your environment.
 
 ```bash
-# 1. Federated Credential am zentralen SP
+# 1. Federated credential on the GitHub Actions service principal
 az ad app federated-credential create \
-  --id c1c157eb-d4c5-4288-b9b1-5615b9a4c832 \
+  --id <github-actions-sp-app-id> \
   --parameters '{
-    "name": "Github-crossvertise-nightwatchman-production-FederatedCredential",
+    "name": "<descriptive-name>",
     "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "repo:crossvertise/nightwatchman:environment:production",
+    "subject": "repo:<org>/<repo>:environment:production",
     "audiences": ["api://AzureADTokenExchange"]
   }'
 
-# 2. Deploy-Rechte nur auf die Resource Group
+# 2. Deploy permissions, scoped to the resource group containing the App Service
 az role assignment create \
-  --assignee 2f7e0cec-9d48-4379-8f7a-f5ca8e51c4d1 \
+  --assignee <github-actions-sp-object-id> \
   --role "Website Contributor" \
-  --scope /subscriptions/b6ba45e2-3816-44b0-ba54-78f080dc57d2/resourceGroups/nightwatchman-live
+  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group>
 
-# 3. GitHub-Environment und Variablen
-gh api -X PUT repos/crossvertise/nightwatchman/environments/production
-gh variable set AZURE_CLIENT_ID       -R crossvertise/nightwatchman -b "c1c157eb-d4c5-4288-b9b1-5615b9a4c832"
-gh variable set AZURE_TENANT_ID       -R crossvertise/nightwatchman -b "70470a10-c0d1-4c3b-a249-d43d39407fd9"
-gh variable set AZURE_SUBSCRIPTION_ID -R crossvertise/nightwatchman -b "b6ba45e2-3816-44b0-ba54-78f080dc57d2"
+# 3. GitHub environment and repository variables
+gh api -X PUT repos/<org>/<repo>/environments/production
+gh variable set AZURE_CLIENT_ID       -R <org>/<repo> -b "<client-id>"
+gh variable set AZURE_TENANT_ID       -R <org>/<repo> -b "<tenant-id>"
+gh variable set AZURE_SUBSCRIPTION_ID -R <org>/<repo> -b "<subscription-id>"
+gh variable set AZURE_WEBAPP_NAME     -R <org>/<repo> -b "<app-service-name>"
+gh variable set AZURE_WEBAPP_URL      -R <org>/<repo> -b "https://<app-service-name>.azurewebsites.net"
 ```
 
-Für ein weiteres Environment (z. B. Staging): neues FIC mit Subject
-`repo:crossvertise/nightwatchman:environment:<name>`, Role Assignment auf die neue RG,
-GitHub-Environment anlegen und den Workflow um das Environment erweitern.
+For an additional environment (e.g. staging): create a new federated credential with subject
+`repo:<org>/<repo>:environment:<name>`, a role assignment scoped to the corresponding resource
+group, a matching GitHub environment, and extend the workflow to target it.
 
 ## Troubleshooting
 
-- **`AADSTS70021` / Login schlägt fehl:** FIC-Subject muss exakt
-  `repo:crossvertise/nightwatchman:environment:production` sein und der Deploy-Job muss im
-  GitHub-Environment `production` laufen.
-- **`403` beim Deploy:** Role Assignment des SP auf der RG prüfen (`az role assignment list
-  --assignee 2f7e0cec-9d48-4379-8f7a-f5ca8e51c4d1 --subscription b6ba45e2-…`).
-- **HTTP 500.31 nach Deploy:** dürfte mit self-contained publish nicht auftreten; falls doch,
-  prüfen ob wirklich das win-x86-Paket deployt wurde (32-Bit-Worker!).
+- **`AADSTS70021` / login fails:** the federated credential's subject must exactly match
+  `repo:<org>/<repo>:environment:production`, and the deploy job must actually run in the
+  GitHub environment `production`.
+- **`403` on deploy:** check the service principal's role assignment on the target resource
+  group (`az role assignment list --assignee <object-id> --subscription <subscription-id>`).
+- **HTTP 500.31 after deploy:** shouldn't occur with a self-contained publish; if it does,
+  verify the deployed package is actually the `win-x86` build (the App Service plan is a
+  32-bit worker).
+- **Smoke test fails / times out:** confirm `AZURE_WEBAPP_URL` points at the right host and
+  that `MailReporter/Mandrill` is reachable anonymously (no auth in front of it at the
+  infrastructure level).
