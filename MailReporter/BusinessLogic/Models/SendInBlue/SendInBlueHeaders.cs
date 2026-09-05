@@ -1,11 +1,14 @@
-﻿namespace BusinessLogic.Models.SendInBlue
+namespace BusinessLogic.Models.SendInBlue
 {
+    using Newtonsoft.Json;
+
     public class SendInBlueHeaders
     {
         public string ReturnPath { get; set; }
 
         public string DeliveredTo { get; set; }
 
+        [JsonConverter(typeof(SingleOrArrayConverter))]
         public string[] Received { get; set; }
 
         public string ARCSeal { get; set; }
