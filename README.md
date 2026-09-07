@@ -160,6 +160,11 @@ This endpoint is **unsigned** — Brevo does not sign inbound webhook payloads. 
 restrict access, do so at the network layer (IP allowlist, a reverse proxy shared secret, etc.)
 rather than relying on the endpoint itself.
 
+Brevo serialises multi-valued mail headers (notably `Received`) as an array when the header
+occurs several times and as a plain string when it occurs once; the payload model accepts both.
+A payload that cannot be deserialised makes the endpoint answer `500`, which Brevo retries for
+a while, so a broken model surfaces as jobs becoming overdue rather than as a visible error.
+
 ## PRTG monitoring
 
 Add an **HTTP Data Advanced** sensor pointing at:

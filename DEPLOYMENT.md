@@ -53,6 +53,7 @@ naming convention:
 | `AzureAd__Domain` | Verified domain of the Entra tenant |
 | `McpAuth__ClientId` | Public-client app registration for MCP clients |
 | `McpAuth__ApiClientId` | Resource/API app registration for the `/mcp` token audience |
+| `ASPNETCORE_ENVIRONMENT` | Must be `Production`. With `Development` the developer exception page is active and leaks stack traces to callers. |
 
 See [docs/entra-setup.md](docs/entra-setup.md) for how to create the underlying Entra app
 registrations, and [README.md](README.md#configuration) for the full configuration reference.
@@ -101,6 +102,12 @@ group, a matching GitHub environment, and extend the workflow to target it.
 - **HTTP 500.31 after deploy:** shouldn't occur with a self-contained publish; if it does,
   verify the deployed package is actually the `win-x86` build (the App Service plan is a
   32-bit worker).
+- **Webhook mails silently stop arriving:** the Mandrill/Brevo webhooks answer `500` when a
+  payload fails to deserialise, and the sender keeps retrying without anyone noticing. Enable
+  App Service logs once (`az webapp log config --web-server-logging filesystem
+  --application-logging filesystem --level information --detailed-error-messages true`), then
+  `az webapp log download --log-file logs.zip`: `LogFiles/http/RawLogs` shows the webhook status
+  codes, `LogFiles/eventlog.xml` contains the unhandled exceptions with the payload path.
 - **Smoke test fails / times out:** confirm `AZURE_WEBAPP_URL` points at the right host and
   that `MailReporter/Mandrill` is reachable anonymously (no auth in front of it at the
   infrastructure level).
