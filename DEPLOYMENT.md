@@ -88,6 +88,25 @@ gh variable set AZURE_WEBAPP_NAME     -R <org>/<repo> -b "<app-service-name>"
 gh variable set AZURE_WEBAPP_URL      -R <org>/<repo> -b "https://<app-service-name>.azurewebsites.net"
 ```
 
+### Azure Functions tiles: read access for the app
+
+The dashboard's Azure Functions tiles read Service Bus through the App Service's managed identity.
+Enable it once and give it **Reader** on the Service Bus namespace (it may live in another
+subscription of the same tenant):
+
+```bash
+# 4. System-assigned managed identity of the App Service
+principal=$(az webapp identity assign -g <resource-group> -n <app-service-name> --query principalId -o tsv)
+
+# 5. Read-only access to the Service Bus namespace the watched functions use
+az role assignment create \
+  --assignee-object-id "$principal" --assignee-principal-type ServicePrincipal \
+  --role Reader \
+  --scope /subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.ServiceBus/namespaces/<namespace>
+```
+
+Without it the tiles show "Unknown" with the reason; the jobs part of the dashboard is unaffected.
+
 For an additional environment (e.g. staging): create a new federated credential with subject
 `repo:<org>/<repo>:environment:<name>`, a role assignment scoped to the corresponding resource
 group, a matching GitHub environment, and extend the workflow to target it.
