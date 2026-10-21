@@ -106,6 +106,10 @@ as App Service application settings (`Key__SubKey` naming for nested sections).
 | `McpAuth:ClientId` | Public-client app registration used by MCP clients (see below) |
 | `McpAuth:ApiClientId` | Resource/API app registration that the `/mcp` token is issued for |
 | `McpAuth:Scope` | Delegated scope required on the token; defaults to `api://{ApiClientId}/access_as_user` when empty |
+| `AzureFunctions:ServiceBusNamespaceResourceId` | ARM resource id of the Service Bus namespace the watched Azure Functions read from |
+| `AzureFunctions:StuckAfterMinutes` | How long nothing may be completed while messages wait before a function counts as stuck (default 30) |
+| `AzureFunctions:GraceMinutes` | Messages must already have waited this long, so a cold start does not count as stuck (default 10) |
+| `AzureFunctions:Monitors` | The watched functions: `Name`, `FunctionApp`, and `Queue` or `Topic` + `Subscription` (optional `NamespaceResourceId`). The live list is in `Mvc/appsettings.Production.json` |
 
 See [docs/entra-setup.md](docs/entra-setup.md) for how to create the Entra app registrations
 these keys point to.
@@ -133,6 +137,27 @@ No match ⇒ the execution is filed under a synthetic `"Unknown"` job.
 
 `ReclassifyUnclassified` re-runs classification for already-stored `"Unknown"` executions —
 handy after you've adjusted a job's matching pattern.
+
+## Azure Functions tiles
+
+Below the jobs, the dashboard shows one tile per Service Bus-triggered Azure Function listed under
+`AzureFunctions:Monitors`. A function sends no notification mail, so it is watched through the
+queue or topic subscription it reads from (`FunctionHealthService`, `AzureServiceBusStatusClient`):
+
+- **Stuck** (red): messages are waiting now, messages were already waiting `GraceMinutes` ago, and
+  nothing was completed in the last `StuckAfterMinutes`. That is what a function on the Consumption
+  plan looks like when its worker failed to start or the platform does not wake it up.
+- **OK** (green): otherwise.
+- **Unknown** (grey): the state could not be read; the tile shows Azure's reason.
+
+Current counts come from Azure Resource Manager, the history from Azure Monitor metrics. Metrics
+exist per queue or topic, not per subscription, so on a topic with an unread subscription a tile
+can briefly show stuck while the function starts up.
+
+The app reads Azure with `DefaultAzureCredential`: its managed identity on the App Service, your
+Azure CLI / Visual Studio login locally. That identity needs the **Reader** role on the Service Bus
+namespace (see [DEPLOYMENT.md](DEPLOYMENT.md#one-time-setup-reference)). With no monitors
+configured (the default), the section is hidden and Azure is never called.
 
 ## Webhooks
 

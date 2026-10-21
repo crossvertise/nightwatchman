@@ -1,10 +1,10 @@
-﻿@model IEnumerable<DomainModel.DTO.JobOverview>
+﻿@model Mvc.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Index";
 }
 <h2>Job Overwiew</h2>
 <div class="row">
-@foreach(var job in Model) {
+@foreach(var job in Model.Jobs) {
     var status = job.LastStatus == DomainModel.JobExecutionStatus.Error || job.IsDue
         ? "panel-danger"
         : job.LastStatus == DomainModel.JobExecutionStatus.Success
@@ -18,9 +18,41 @@
                 Next run: @job.NextRun <br />
                 Is Due: @job.IsDue
             </div>
-            
+
             <div class="panel-footer @status">Status: <strong>@job.LastStatus</strong></div>
         </div>
     </div>
 }
 </div>
+@if (Model.Functions.Count > 0) {
+<h2>Azure Functions</h2>
+<p class="text-muted">
+    Stuck: messages are waiting and nothing was completed in the last @Model.Functions[0].WindowMinutes minutes, i.e. the function is not running.
+</p>
+<div class="row">
+@foreach(var function in Model.Functions) {
+    var status = function.Error != null
+        ? "panel-default"
+        : function.IsStuck
+            ? "panel-danger"
+            : "panel-success";
+    var label = function.Error != null ? "Unknown" : function.IsStuck ? "Stuck" : "OK";
+    <div class="col-lg-3 col-md-3 col-sm-6">
+        <div class="panel @status">
+            <div class="panel-heading" title="@function.Monitor.FunctionApp">@function.Monitor.Name</div>
+            <div class="panel-body">
+                Reads: @function.Monitor.Source <br />
+                Waiting: @function.WaitingMessages <br />
+                Completed (@function.WindowMinutes min): @function.CompletedMessages <br />
+                Dead letters: @function.DeadLetteredMessages
+                @if (function.Error != null) {
+                    <br /><small class="text-muted">@function.Error</small>
+                }
+            </div>
+
+            <div class="panel-footer @status">Status: <strong>@label</strong></div>
+        </div>
+    </div>
+}
+</div>
+}

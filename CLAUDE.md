@@ -66,6 +66,14 @@ configuration. Each repo supplies its string id selector via `IdProperty`; ids a
 - `ReclassifyUnclassified` re-classifies already-stored, unknown executions after the fact —
   useful once a job's matching pattern has been adjusted.
 
+**Azure Functions tiles** — `FunctionHealthService` builds one `FunctionOverview` per
+`AzureFunctions:Monitors` entry (Service Bus-triggered functions send no mail). Stuck = messages
+waiting now, already waiting `GraceMinutes` ago, and nothing completed in `StuckAfterMinutes`.
+`AzureServiceBusStatusClient` reads the counts from ARM and the history from Azure Monitor metrics
+via `DefaultAzureCredential` (managed identity live, Azure CLI login locally; needs Reader on the
+namespace). No monitors configured (the default, also in the integration tests) ⇒ no Azure calls.
+The live list is in `Mvc/appsettings.Production.json`.
+
 **Webhook inputs** (both `[AllowAnonymous]`, in `MailReporterController`):
 - `POST/GET/HEAD /MailReporter/Mandrill` — form payload, HMAC-SHA1 signature verified by
   `MandrillWebhookAttribute` against `MandrillWebhookKey`; `HEAD` serves as Mandrill's health
