@@ -15,6 +15,7 @@ namespace Mvc
 
     using ModelContextProtocol.AspNetCore;
 
+    using Mvc.HostedServices;
     using Mvc.Mcp;
 
     public class Startup
@@ -55,7 +56,14 @@ namespace Mvc
                 options.Filters.Add(new AuthorizeFilter(policy));
             }).AddNewtonsoftJson();
 
+            // The instrumentation key has been set on the App Service for years, but nothing shipped
+            // the SDK, so this component had no telemetry at all. A background loop we cannot observe
+            // is not worth running.
+            services.AddApplicationInsightsTelemetry();
+
             services.RegisterServices();
+
+            services.AddHostedService<MonitoringWorker>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

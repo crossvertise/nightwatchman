@@ -25,6 +25,9 @@
                 .AddScoped<IJobStatusReportService, JobStatusReportService>()
                 .AddScoped<IServiceBusStatusClient, AzureServiceBusStatusClient>()
                 .AddScoped<IFunctionHealthService, FunctionHealthService>()
+                .AddScoped<IHttpHealthPoller, HttpHealthPoller>()
+                .AddScoped<IAlertNotifier, TeamsWebhookNotifier>()
+                .AddScoped<IAlertEvaluator, AlertEvaluator>()
                 .RegisterRepositories();
         }
     }

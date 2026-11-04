@@ -8,6 +8,7 @@
     {
         public static IServiceCollection RegisterRepositories(this IServiceCollection service) => service
             .AddScoped<IJobRepo, JobRepo>()
-            .AddScoped<IJobExecutionRepo, JobExecutionRepo>();
+            .AddScoped<IJobExecutionRepo, JobExecutionRepo>()
+            .AddScoped<IAlertStateRepo, AlertStateRepo>();
     }
 }

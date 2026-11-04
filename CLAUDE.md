@@ -74,6 +74,26 @@ via `DefaultAzureCredential` (managed identity live, Azure CLI login locally; ne
 namespace). No monitors configured (the default, also in the integration tests) ⇒ no Azure calls.
 The live list is in `Mvc/appsettings.Production.json`.
 
+**Polled HTTP tiles** — `HttpHealthPoller` GETs each `HttpHealth:Monitors` entry and records the
+verdict as a `JobExecution` against the configured `JobName`, so an endpoint that reports its own
+health becomes an ordinary job tile: visible on the dashboard, in the PRTG feed and over MCP, and
+`Overdue` when the polling itself stops. A token is taken from the same `TokenCredential` the
+Service Bus reads use; an empty `Scope` polls anonymously. The body may be bare or wrapped in an
+envelope (`{ meta, data }`) — `ParseResponse` accepts both. A non-200, a timeout or an unreachable
+host is recorded as an error, because an endpoint that cannot be read is not the same as a healthy one.
+The job must already exist: an unmatched monitor is reported rather than silently creating a tile.
+
+**Alerting** — `AlertEvaluator` compares every tile (jobs via `IJobStatusReportService`, Service Bus
+functions via `IFunctionHealthService`) against `AlertState` in Mongo and posts only the
+differences through `IAlertNotifier` (`TeamsWebhookNotifier`, an incoming-webhook URL). It is
+edge-triggered: announced once, silent while it persists, an "all clear" on recovery, and announced
+again if it returns — a row exists only while a tile is broken. Payments and queues are announced at
+any hour; everything else waits for `Alerting:BatchReleaseHour`, so an ETL that dies at 02:00 is
+reported in the morning. A failed delivery leaves the problem unannounced so the next tick retries.
+`MonitoringWorker` (`Mvc/HostedServices`) drives both on a `PeriodicTimer`; every tick is
+wrapped so one failure costs a cycle, not the loop. **It needs Always On** — otherwise the app
+unloads when idle and monitoring stops silently.
+
 **Webhook inputs** (both `[AllowAnonymous]`, in `MailReporterController`):
 - `POST/GET/HEAD /MailReporter/Mandrill` — form payload, HMAC-SHA1 signature verified by
   `MandrillWebhookAttribute` against `MandrillWebhookKey`; `HEAD` serves as Mandrill's health
