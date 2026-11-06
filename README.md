@@ -110,6 +110,16 @@ as App Service application settings (`Key__SubKey` naming for nested sections).
 | `AzureFunctions:StuckAfterMinutes` | How long nothing may be completed while messages wait before a function counts as stuck (default 30) |
 | `AzureFunctions:GraceMinutes` | Messages must already have waited this long, so a cold start does not count as stuck (default 10) |
 | `AzureFunctions:Monitors` | The watched functions: `Name`, `FunctionApp`, and `Queue` or `Topic` + `Subscription` (optional `NamespaceResourceId`). The live list is in `Mvc/appsettings.Production.json` |
+| `HttpHealth:TimeoutSeconds` | How long to wait for a polled endpoint before the poll counts as failed (default 20) |
+| `HttpHealth:Monitors` | Endpoints polled for their own health: `Name`, `JobName` (the job the verdict is recorded against), `Url`, and `Scope` (Entra scope for the bearer token; empty polls anonymously). The live list is in `Mvc/appsettings.Production.json` |
+| `Alerting:Enabled` | Master switch for the monitoring worker. False (the default) means it never starts and nothing is posted |
+| `Alerting:IntervalMinutes` | How often every tile is polled and evaluated (default 10) |
+| `Alerting:TeamsWebhookUrl` | Incoming-webhook URL of the Teams channel. Empty disables posting |
+| `Alerting:ImmediateJobs` | Jobs alerted the moment they break, around the clock. Everything else is treated as a nightly batch job |
+| `Alerting:BatchReleaseHour` | Local hour from which held batch problems may be announced (default 8) |
+| `Alerting:BatchQuietHour` | Local hour from which batch problems are held again (default 22) |
+| `Alerting:TimeZone` | Time zone of the two hours above (default `Europe/Berlin`) |
+| `Alerting:DashboardUrl` | Optional link appended to problem alerts |
 
 See [docs/entra-setup.md](docs/entra-setup.md) for how to create the Entra app registrations
 these keys point to.
