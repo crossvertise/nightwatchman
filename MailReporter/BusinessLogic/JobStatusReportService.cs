@@ -5,6 +5,7 @@ namespace BusinessLogic
     using System.Linq;
     using System.Threading.Tasks;
 
+    using BusinessLogic.Implementations;
     using BusinessLogic.Interfaces;
 
     using DomainModel;
@@ -195,6 +196,9 @@ namespace BusinessLogic
                 LastRunUtc = overview.LastRun,
                 ExpectedByUtc = overview.NextRun,
                 LastSubject = lastExecution?.OriginalSubject,
+                Issues = lastExecution?.Status == JobExecutionStatus.Error
+                    ? HealthIssueReader.Parse(lastExecution.ErrorSummary).ToList()
+                    : new List<HealthIssue>(),
             };
         }
 

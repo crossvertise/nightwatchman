@@ -17,6 +17,44 @@
                 Last run: @job.LastRun <br />
                 Next run: @job.NextRun <br />
                 Is Due: @job.IsDue
+                @{
+                    var lastExecution = job.LastExecutions?.FirstOrDefault();
+                }
+                @if (lastExecution?.Status == DomainModel.JobExecutionStatus.Error)
+                {
+                    var issues = BusinessLogic.Implementations.HealthIssueReader.Parse(lastExecution.ErrorSummary);
+                    var host = BusinessLogic.Implementations.HealthIssueReader.HostFor(Model.HttpHealth, job.Job.Name);
+                    <div class="small" style="margin-top:6px"><strong>@lastExecution.OriginalSubject</strong></div>
+                    @if (issues.Count > 0)
+                    {
+                        <ul class="small" style="padding-left:16px;margin:4px 0 0">
+                        @foreach (var issue in issues.Take(BusinessLogic.Implementations.HealthIssueReader.MaxLines))
+                        {
+                            <li>
+                                @BusinessLogic.Implementations.HealthIssueReader.DescribeReason(issue.Reason)
+                                @if (!string.IsNullOrWhiteSpace(issue.Provider)) { <text> · @issue.Provider</text> }
+                                @if (issue.PaymentId.HasValue) { <text> · payment @issue.PaymentId</text> }
+                                @if (issue.OrderId.HasValue)
+                                {
+                                    if (host != null)
+                                    {
+                                        <text> · order </text><a href="@BusinessLogic.Implementations.HealthIssueReader.OrderUrl(host, issue.OrderId.Value)" target="_blank" rel="noopener">@issue.OrderId</a>
+                                    }
+                                    else
+                                    {
+                                        <text> · order @issue.OrderId</text>
+                                    }
+                                }
+                                @if (issue.SinceUtc.HasValue) { <text> · since @issue.SinceUtc.Value.ToString("dd.MM. HH:mm") UTC</text> }
+                            </li>
+                        }
+                        @if (issues.Count > BusinessLogic.Implementations.HealthIssueReader.MaxLines)
+                        {
+                            <li>… and @(issues.Count - BusinessLogic.Implementations.HealthIssueReader.MaxLines) more</li>
+                        }
+                        </ul>
+                    }
+                }
             </div>
 
             <div class="panel-footer @status">Status: <strong>@job.LastStatus</strong></div>

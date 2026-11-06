@@ -5,11 +5,13 @@
     using System.Threading.Tasks;
 
     using BusinessLogic.Interfaces;
+    using BusinessLogic.Models.Http;
 
     using DomainModel.DTO.PRTG;
 
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.Extensions.Configuration;
 
     using Mvc.Attributes;
     using Mvc.Models;
@@ -21,11 +23,13 @@
     {
         private readonly IJobExecutionService _jobStatusService;
         private readonly IFunctionHealthService _functionHealthService;
+        private readonly IConfiguration _configuration;
 
-        public DashboardController(IJobExecutionService jobStatusService, IFunctionHealthService functionHealthService)
+        public DashboardController(IJobExecutionService jobStatusService, IFunctionHealthService functionHealthService, IConfiguration configuration)
         {
             _jobStatusService = jobStatusService;
             _functionHealthService = functionHealthService;
+            _configuration = configuration;
         }
 
         public async Task<IActionResult> Index()
@@ -34,6 +38,7 @@
             {
                 Jobs = await _jobStatusService.GetOverview(),
                 Functions = await _functionHealthService.GetOverview(),
+                HttpHealth = _configuration.GetSection(HttpHealthOptions.SectionName).Get<HttpHealthOptions>() ?? new HttpHealthOptions(),
             };
             return View(model);
         }
