@@ -106,6 +106,31 @@ namespace BusinessLogic.Tests
         }
 
         [Test]
+        public async Task GetHealthSummary_FailedHealthPoll_CarriesTheFlaggedPayments()
+        {
+            var overview = Overview("Payment Health Live", JobExecutionStatus.Error, DateTime.UtcNow.AddMinutes(-5));
+            overview.LastExecutions[0].ErrorSummary =
+                "{\"data\":{\"errors\":1,\"details\":[{\"reason\":\"TechnicalFailure\",\"paymentId\":8629,\"orderId\":60172,\"provider\":\"CreditCard\"}]}}";
+            var service = CreateService(overview);
+
+            var problem = (await service.GetHealthSummary()).Problems.Single();
+
+            Assert.That(problem.Issues.Select(i => i.PaymentId), Is.EqualTo(new int?[] { 8629 }));
+        }
+
+        [Test]
+        public async Task GetHealthSummary_HealthyJob_CarriesNoFindings()
+        {
+            var overview = Overview("Backup", JobExecutionStatus.Error, DateTime.UtcNow.AddMinutes(-5));
+            overview.LastExecutions[0].ErrorSummary = "mail body without findings";
+            var service = CreateService(overview);
+
+            var problem = (await service.GetHealthSummary()).Problems.Single();
+
+            Assert.That(problem.Issues, Is.Empty);
+        }
+
+        [Test]
         public async Task GetHealthSummary_OverdueJob_IsReportedAsOverdueProblem()
         {
             var service = CreateService(

@@ -200,6 +200,56 @@ namespace BusinessLogic.Tests
             _notifier.Verify(n => n.Send(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        // ---------- alert text ----------
+
+        [Test]
+        public async Task A_payment_alert_lists_the_flagged_payments_with_a_link_to_the_order()
+        {
+            string? sent = null;
+            _notifier.Setup(n => n.Send(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Callback<string, CancellationToken>((text, _) => sent = text)
+                .ReturnsAsync(true);
+
+            var problem = Problem(PaymentJob, "Failed", "1 x technical authorization failure");
+            problem.Issues.Add(new HealthIssue
+            {
+                Reason = "TechnicalFailure",
+                PaymentId = 8629,
+                OrderId = 60172,
+                Provider = "CreditCard",
+                SinceUtc = new DateTime(2026, 11, 6, 18, 52, 21, DateTimeKind.Utc),
+            });
+            Problems(problem);
+
+            await Run(AtUtcHour(3));
+
+            Assert.That(sent, Does.Contain("1 x technical authorization failure"));
+            Assert.That(sent, Does.Contain(
+                "• technical failure · CreditCard · payment 8629 · order [60172](https://market.crossvertise.com/de-de/manager/ordersales/edit/60172) · since 06.11. 18:52 UTC"));
+        }
+
+        [Test]
+        public async Task Only_the_first_five_payments_are_listed_and_the_rest_is_counted()
+        {
+            string? sent = null;
+            _notifier.Setup(n => n.Send(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Callback<string, CancellationToken>((text, _) => sent = text)
+                .ReturnsAsync(true);
+
+            var problem = Problem(PaymentJob, "Failed", "7 x technical authorization failure");
+            for (var i = 1; i <= 7; i++)
+            {
+                problem.Issues.Add(new HealthIssue { Reason = "TechnicalFailure", PaymentId = i, OrderId = 100 + i });
+            }
+
+            Problems(problem);
+
+            await Run(AtUtcHour(3));
+
+            Assert.That(sent!.Split('•').Length - 1, Is.EqualTo(5));
+            Assert.That(sent, Does.Contain("… and 2 more"));
+        }
+
         // ---------- delivery ----------
 
         [Test]
@@ -271,6 +321,8 @@ namespace BusinessLogic.Tests
                     ["Alerting:BatchReleaseHour"] = "8",
                     ["Alerting:BatchQuietHour"] = "22",
                     ["Alerting:ImmediateJobs:0"] = PaymentJob,
+                    ["HttpHealth:Monitors:0:Name"] = PaymentJob,
+                    ["HttpHealth:Monitors:0:Url"] = "https://market.crossvertise.com/api-fd/v1/internal/monitoring/payment-health",
                 })
                 .Build();
 

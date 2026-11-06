@@ -9,6 +9,7 @@ namespace BusinessLogic.Implementations
 
     using BusinessLogic.Interfaces;
     using BusinessLogic.Models.Alerting;
+    using BusinessLogic.Models.Http;
 
     using DomainModel.Alerting;
 
@@ -84,6 +85,8 @@ namespace BusinessLogic.Implementations
             var immediate = new HashSet<string>(options.ImmediateJobs ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
             var problems = new List<MonitorProblem>();
 
+            var httpHealth = _configuration.GetSection(HttpHealthOptions.SectionName).Get<HttpHealthOptions>() ?? new HttpHealthOptions();
+
             var health = await _reportService.GetHealthSummary();
             foreach (var problem in health.Problems ?? new List<DomainModel.DTO.Report.JobProblem>())
             {
@@ -93,6 +96,8 @@ namespace BusinessLogic.Implementations
                     DisplayName = problem.JobName,
                     Reason = problem.Reason,
                     Detail = problem.LastSubject,
+                    Issues = problem.Issues ?? new List<DomainModel.DTO.Report.HealthIssue>(),
+                    Host = HealthIssueReader.HostFor(httpHealth, problem.JobName),
                     Immediate = immediate.Contains(problem.JobName),
                 });
             }
@@ -241,6 +246,17 @@ namespace BusinessLogic.Implementations
             if (!string.IsNullOrWhiteSpace(problem.Detail))
             {
                 text += $"{Environment.NewLine}{problem.Detail}";
+            }
+
+            var issues = problem.Issues ?? new List<DomainModel.DTO.Report.HealthIssue>();
+            foreach (var issue in issues.Take(HealthIssueReader.MaxLines))
+            {
+                text += $"{Environment.NewLine}• {HealthIssueReader.Describe(issue, problem.Host, markdown: true)}";
+            }
+
+            if (issues.Count > HealthIssueReader.MaxLines)
+            {
+                text += $"{Environment.NewLine}… and {issues.Count - HealthIssueReader.MaxLines} more";
             }
 
             return Append(text, options);
