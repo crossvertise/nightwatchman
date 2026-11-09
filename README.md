@@ -116,6 +116,7 @@ as App Service application settings (`Key__SubKey` naming for nested sections).
 | `Alerting:IntervalMinutes` | How often every tile is polled and evaluated (default 10) |
 | `Alerting:TeamsWebhookUrl` | Incoming-webhook URL of the Teams channel. Empty disables posting |
 | `Alerting:ImmediateJobs` | Jobs alerted the moment they break, around the clock. Everything else is treated as a nightly batch job |
+| `Alerting:ConfirmAfterMinutes` | How long a tile must stay broken before it is announced (default 20). A tile that goes red and green again inside this window is never posted; 0 announces on first sight |
 | `Alerting:BatchReleaseHour` | Local hour from which held batch problems may be announced (default 8) |
 | `Alerting:BatchQuietHour` | Local hour from which batch problems are held again (default 22) |
 | `Alerting:TimeZone` | Time zone of the two hours above (default `Europe/Berlin`) |

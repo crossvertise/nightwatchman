@@ -159,6 +159,12 @@ namespace BusinessLogic.Implementations
                     continue;
                 }
 
+                if (!IsConfirmed(state, options, nowUtc))
+                {
+                    summary.AwaitingConfirmation++;
+                    continue;
+                }
+
                 if (!MayAnnounce(problem, options, nowUtc))
                 {
                     summary.Deferred++;
@@ -210,6 +216,26 @@ namespace BusinessLogic.Implementations
                 }
             }
         }
+
+        /// <summary>
+        /// Whether a problem has been broken long enough to be worth saying out loud.
+        /// </summary>
+        /// <remarks>
+        /// This is the difference between a monitor and a nuisance. A Service Bus subscription with two
+        /// messages waiting and none completed inside the window is reported as stuck, and on live every
+        /// such episode cleared on the next tick — so first-sight alerting posted a red and a green ten
+        /// minutes apart and said nothing anyone could act on.
+        /// <para>
+        /// Waiting is cheap because the row already exists: the problem is remembered from the first
+        /// sighting, and if it recovers before the window elapses the row is dropped without a word.
+        /// Note the consequence — a problem that flaps repeatedly, each episode shorter than the window,
+        /// stays silent forever. That is deliberate for a tile nobody can act on, but it means a
+        /// chronically flapping queue has to be noticed on the dashboard rather than in the channel.
+        /// </para>
+        /// </remarks>
+        internal static bool IsConfirmed(AlertState state, AlertingOptions options, DateTime nowUtc) =>
+            options.ConfirmAfterMinutes <= 0
+            || nowUtc - state.FirstSeenUtc >= TimeSpan.FromMinutes(options.ConfirmAfterMinutes);
 
         /// <summary>
         /// Payments and queues are announced at any hour. Batch jobs wait for working hours, so an ETL

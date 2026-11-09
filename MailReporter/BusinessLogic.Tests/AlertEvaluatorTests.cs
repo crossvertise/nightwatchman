@@ -63,8 +63,45 @@ namespace BusinessLogic.Tests
         }
 
         [Test]
-        public async Task A_new_problem_is_announced_once()
+        public async Task A_problem_seen_for_the_first_time_is_remembered_but_not_announced()
         {
+            // The row is written so the clock starts, but nothing is posted yet: on live every single
+            // "Stuck" episode cleared on the very next tick, so announcing on first sight meant two
+            // messages per flap and a channel nobody read.
+            Problems(Problem(PaymentJob, "Failed", "2 waiting, 0 completed in 30 min"));
+
+            var summary = await Run(AtUtcHour(3));
+
+            Assert.That(summary.AwaitingConfirmation, Is.EqualTo(1));
+            Assert.That(summary.Alerted, Is.Zero);
+            _notifier.Verify(n => n.Send(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+            Assert.That(_stored.Single().AlertedAtUtc, Is.Null, "remembered, so the next tick can confirm it");
+        }
+
+        [Test]
+        public async Task A_tile_that_flaps_inside_the_confirmation_window_is_never_mentioned()
+        {
+            // The whole point. Red on one tick, green on the next, and the channel stays silent -
+            // no alert, and no "green again" either, because nothing was ever claimed.
+            Problems(Problem(PaymentJob, "Failed", "1 waiting, 0 completed in 30 min"));
+            await Run(AtUtcHour(3));
+
+            Problems();
+            var second = await Run(AtUtcHour(3).AddMinutes(10));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(second.Alerted, Is.Zero);
+                Assert.That(second.Recovered, Is.Zero);
+                Assert.That(_stored, Is.Empty);
+            });
+            _notifier.Verify(n => n.Send(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test]
+        public async Task A_problem_that_outlasts_the_window_is_announced_once()
+        {
+            _stored.Add(Pending(PaymentJob, "Failed"));
             Problems(Problem(PaymentJob, "Failed", "3 x authorized but order still Draft"));
 
             var summary = await Run(AtUtcHour(3));
@@ -101,7 +138,9 @@ namespace BusinessLogic.Tests
         [Test]
         public async Task The_same_problem_coming_back_is_announced_again()
         {
-            // Recovery cleared the row; the second outage is a new incident and must be heard.
+            // Recovery cleared the row; the second outage is a new incident and must be heard once it
+            // has lasted long enough to be worth hearing about.
+            _stored.Add(Pending(PaymentJob, "Failed"));
             Problems(Problem(PaymentJob, "Failed", "back again"));
 
             var summary = await Run(AtUtcHour(3));
@@ -126,6 +165,7 @@ namespace BusinessLogic.Tests
         [Test]
         public async Task A_batch_job_breaking_at_night_waits_for_the_morning()
         {
+            _stored.Add(Pending(BatchJob, "Overdue"));
             Problems(Problem(BatchJob, "Overdue", "no mail since 22:20"));
 
             var summary = await Run(AtUtcHour(3));
@@ -150,6 +190,7 @@ namespace BusinessLogic.Tests
         [Test]
         public async Task Payments_are_announced_at_any_hour()
         {
+            _stored.Add(Pending(PaymentJob, "Failed"));
             Problems(Problem(PaymentJob, "Failed", "money held on a draft order"));
 
             var summary = await Run(AtUtcHour(3));
@@ -160,8 +201,9 @@ namespace BusinessLogic.Tests
         // ---------- queues ----------
 
         [Test]
-        public async Task A_stuck_queue_is_announced_immediately_even_though_the_MCP_cannot_see_it()
+        public async Task A_stuck_queue_is_announced_at_any_hour_even_though_the_MCP_cannot_see_it()
         {
+            _stored.Add(PendingFunction("Mailer", AlertEvaluator.StuckReason));
             _functionHealth.Setup(s => s.GetOverview()).ReturnsAsync(new[]
             {
                 new FunctionOverview
@@ -210,6 +252,7 @@ namespace BusinessLogic.Tests
                 .Callback<string, CancellationToken>((text, _) => sent = text)
                 .ReturnsAsync(true);
 
+            _stored.Add(Pending(PaymentJob, "Failed"));
             var problem = Problem(PaymentJob, "Failed", "1 x technical authorization failure");
             problem.Issues.Add(new HealthIssue
             {
@@ -236,6 +279,7 @@ namespace BusinessLogic.Tests
                 .Callback<string, CancellationToken>((text, _) => sent = text)
                 .ReturnsAsync(true);
 
+            _stored.Add(Pending(PaymentJob, "Failed"));
             var problem = Problem(PaymentJob, "Failed", "7 x technical authorization failure");
             for (var i = 1; i <= 7; i++)
             {
@@ -256,6 +300,7 @@ namespace BusinessLogic.Tests
         public async Task An_undelivered_alert_is_retried_rather_than_lost()
         {
             _notifier.Setup(n => n.Send(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+            _stored.Add(Pending(PaymentJob, "Failed"));
             Problems(Problem(PaymentJob, "Failed", "webhook is down"));
 
             var summary = await Run(AtUtcHour(3));
@@ -275,6 +320,16 @@ namespace BusinessLogic.Tests
             Assert.That(summary.Problems, Is.EqualTo(0));
             _notifier.Verify(n => n.Send(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
             _alertStateRepo.Verify(r => r.Create(It.IsAny<AlertState>()), Times.Never);
+        }
+
+        [Test]
+        public async Task A_zero_window_restores_announcing_on_first_sight()
+        {
+            Problems(Problem(PaymentJob, "Failed", "no waiting wanted"));
+
+            var summary = await Run(AtUtcHour(3), confirmAfterMinutes: 0);
+
+            Assert.That(summary.Alerted, Is.EqualTo(1));
         }
 
         // ---------- helpers ----------
@@ -298,6 +353,16 @@ namespace BusinessLogic.Tests
             AlertedAtUtc = AtUtcHour(1),
         };
 
+        private static AlertState PendingFunction(string monitorName, string reason) => new AlertState
+        {
+            Id = Guid.NewGuid().ToString(),
+            Key = AlertEvaluator.FunctionKeyPrefix + monitorName,
+            DisplayName = monitorName,
+            Reason = reason,
+            FirstSeenUtc = AtUtcHour(1),
+            AlertedAtUtc = null,
+        };
+
         private static AlertState Pending(string jobName, string reason) => new AlertState
         {
             Id = Guid.NewGuid().ToString(),
@@ -308,7 +373,7 @@ namespace BusinessLogic.Tests
             AlertedAtUtc = null,
         };
 
-        private Task<AlertRunSummary> Run(DateTime nowUtc, bool enabled = true)
+        private Task<AlertRunSummary> Run(DateTime nowUtc, bool enabled = true, int confirmAfterMinutes = 20)
         {
             // UTC rather than Europe/Berlin so the quiet-hours assertions do not move with the clock
             // change; the conversion itself is a single framework call with a UTC fallback.
@@ -321,6 +386,7 @@ namespace BusinessLogic.Tests
                     ["Alerting:BatchReleaseHour"] = "8",
                     ["Alerting:BatchQuietHour"] = "22",
                     ["Alerting:ImmediateJobs:0"] = PaymentJob,
+                    ["Alerting:ConfirmAfterMinutes"] = confirmAfterMinutes.ToString(),
                     ["HttpHealth:Monitors:0:Name"] = PaymentJob,
                     ["HttpHealth:Monitors:0:Url"] = "https://market.crossvertise.com/api-fd/v1/internal/monitoring/payment-health",
                 })

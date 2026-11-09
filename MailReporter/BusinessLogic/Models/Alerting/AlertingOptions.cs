@@ -22,6 +22,19 @@ namespace BusinessLogic.Models.Alerting
         /// </summary>
         public List<string> ImmediateJobs { get; set; } = new List<string>();
 
+        /// <summary>
+        /// How long a problem must stay broken before it is announced at all. A tile that goes red and
+        /// green again inside this window is never posted: observed live, every "Stuck" alert on the
+        /// CRM and domain-event subscriptions cleared on the very next tick, so announcing on first
+        /// sight cost two messages per flap and taught everyone to ignore the channel.
+        /// <para>
+        /// The cost is the delay: with the default a persistent problem is announced on the third
+        /// sighting rather than the first, so roughly 20 minutes late at a 10-minute cadence. Lower it
+        /// for a faster alert, raise it for a quieter channel. Zero restores announce-on-first-sight.
+        /// </para>
+        /// </summary>
+        public int ConfirmAfterMinutes { get; set; } = 20;
+
         /// <summary>Local hour from which a held batch problem may be announced.</summary>
         public int BatchReleaseHour { get; set; } = 8;
 

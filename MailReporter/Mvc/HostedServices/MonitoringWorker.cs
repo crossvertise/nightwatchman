@@ -95,13 +95,14 @@ namespace Mvc.HostedServices
                 var evaluator = scope.ServiceProvider.GetRequiredService<IAlertEvaluator>();
                 var summary = await evaluator.Run(stoppingToken);
 
-                if (summary.Alerted > 0 || summary.Recovered > 0 || summary.FailedToSend > 0)
+                if (summary.Alerted > 0 || summary.Recovered > 0 || summary.FailedToSend > 0 || summary.AwaitingConfirmation > 0)
                 {
                     _logger.LogInformation(
-                        "Monitoring tick: {Problems} problem(s), {Alerted} announced, {Recovered} recovered, {Deferred} deferred, {FailedToSend} undelivered.",
+                        "Monitoring tick: {Problems} problem(s), {Alerted} announced, {Recovered} recovered, {AwaitingConfirmation} awaiting confirmation, {Deferred} deferred, {FailedToSend} undelivered.",
                         summary.Problems,
                         summary.Alerted,
                         summary.Recovered,
+                        summary.AwaitingConfirmation,
                         summary.Deferred,
                         summary.FailedToSend);
                 }
