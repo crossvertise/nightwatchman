@@ -87,9 +87,13 @@ The job must already exist: an unmatched monitor is reported rather than silentl
 functions via `IFunctionHealthService`) against `AlertState` in Mongo and posts only the
 differences through `IAlertNotifier` (`TeamsWebhookNotifier`, an incoming-webhook URL). It is
 edge-triggered: announced once, silent while it persists, an "all clear" on recovery, and announced
-again if it returns — a row exists only while a tile is broken. Payments and queues are announced at
-any hour; everything else waits for `Alerting:BatchReleaseHour`, so an ETL that dies at 02:00 is
-reported in the morning. A failed delivery leaves the problem unannounced so the next tick retries.
+again if it returns — a row exists only while a tile is broken. A problem must survive
+`Alerting:ConfirmAfterMinutes` before it is announced at all: the row is created on first sight but
+stays unannounced, so a tile that flaps red and green inside that window costs no messages (every
+live "Stuck" alert on the CRM and domain-event subscriptions cleared on the next tick, which is what
+made the channel unreadable). The cost is that a repeatedly flapping tile is only visible on the
+dashboard. Payments and queues are then announced at any hour; everything else waits for
+`Alerting:BatchReleaseHour`, so an ETL that dies at 02:00 is reported in the morning. A failed delivery leaves the problem unannounced so the next tick retries.
 `MonitoringWorker` (`Mvc/HostedServices`) drives both on a `PeriodicTimer`; every tick is
 wrapped so one failure costs a cycle, not the loop. **It needs Always On** — otherwise the app
 unloads when idle and monitoring stops silently.

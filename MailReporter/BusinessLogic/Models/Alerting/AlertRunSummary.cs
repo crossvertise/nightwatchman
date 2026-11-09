@@ -15,6 +15,12 @@ namespace BusinessLogic.Models.Alerting
         /// <summary>Problems held back because it is outside the hours for batch alerts.</summary>
         public int Deferred { get; set; }
 
+        /// <summary>
+        /// Problems seen but not yet old enough to announce. A tile that recovers while in this state
+        /// is never posted at all, which is the point.
+        /// </summary>
+        public int AwaitingConfirmation { get; set; }
+
         /// <summary>Alerts whose delivery failed; they stay unannounced and are retried next tick.</summary>
         public int FailedToSend { get; set; }
     }
