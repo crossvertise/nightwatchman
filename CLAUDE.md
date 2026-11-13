@@ -83,6 +83,14 @@ envelope (`{ meta, data }`) — `ParseResponse` accepts both. A non-200, a timeo
 host is recorded as an error, because an endpoint that cannot be read is not the same as a healthy one.
 The job must already exist: an unmatched monitor is reported rather than silently creating a tile.
 
+**Log-query tiles** — `LogQueryPoller` runs the KQL under `LogQueryHealth:Monitors` against a Log
+Analytics workspace with the managed identity (needs **Monitoring Reader** on the workspace) and
+records the verdict as a `JobExecution`, so it is an ordinary tile. This covers what the payment
+sweep structurally cannot: the sweep watches payment *rows*, and a request that dies with a 500
+leaves either nothing or a Draft payment, which is deliberately ignored because every abandoned
+cart is Draft (missed live on 12.11., a PayPal 422 inside `CreatePayment`). Sum `ItemCount` in the
+KQL rather than counting rows — live telemetry is adaptively sampled, so row counts understate.
+
 **Alerting** — `AlertEvaluator` compares every tile (jobs via `IJobStatusReportService`, Service Bus
 functions via `IFunctionHealthService`) against `AlertState` in Mongo and posts only the
 differences through `IAlertNotifier` (`TeamsWebhookNotifier`, an incoming-webhook URL). It is

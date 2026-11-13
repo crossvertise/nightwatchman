@@ -112,6 +112,8 @@ as App Service application settings (`Key__SubKey` naming for nested sections).
 | `AzureFunctions:Monitors` | The watched functions: `Name`, `FunctionApp`, and `Queue` or `Topic` + `Subscription` (optional `NamespaceResourceId`). The live list is in `Mvc/appsettings.Production.json` |
 | `HttpHealth:TimeoutSeconds` | How long to wait for a polled endpoint before the poll counts as failed (default 20) |
 | `HttpHealth:Monitors` | Endpoints polled for their own health: `Name`, `JobName` (the job the verdict is recorded against), `Url`, and `Scope` (Entra scope for the bearer token; empty polls anonymously). The live list is in `Mvc/appsettings.Production.json` |
+| `LogQueryHealth:Monitors` | Log Analytics queries polled as tiles: `Name`, `JobName`, `WorkspaceId`, `Timespan` (ISO-8601, default PT30M) and `Query`. The KQL must project `errors`, optionally `warnings` and `message`. The live list is in `Mvc/appsettings.Production.json` |
+| `LogQueryHealth:TimeoutSeconds` | How long one query may take (default 30) |
 | `Alerting:Enabled` | Master switch for the monitoring worker. False (the default) means it never starts and nothing is posted |
 | `Alerting:IntervalMinutes` | How often every tile is polled and evaluated (default 10) |
 | `Alerting:TeamsWebhookUrl` | Incoming-webhook URL of the Teams channel. Empty disables posting |

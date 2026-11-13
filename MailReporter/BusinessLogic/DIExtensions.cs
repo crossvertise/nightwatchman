@@ -26,6 +26,7 @@
                 .AddScoped<IServiceBusStatusClient, AzureServiceBusStatusClient>()
                 .AddScoped<IFunctionHealthService, FunctionHealthService>()
                 .AddScoped<IHttpHealthPoller, HttpHealthPoller>()
+                .AddScoped<ILogQueryPoller, LogQueryPoller>()
                 .AddScoped<IAlertNotifier, TeamsWebhookNotifier>()
                 .AddScoped<IAlertEvaluator, AlertEvaluator>()
                 .RegisterRepositories();

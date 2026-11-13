@@ -82,7 +82,12 @@ namespace Mvc.HostedServices
                 using var scope = _scopeFactory.CreateScope();
 
                 var poller = scope.ServiceProvider.GetRequiredService<IHttpHealthPoller>();
-                var polls = await poller.PollAll(stoppingToken);
+                var polls = (await poller.PollAll(stoppingToken)).ToList();
+
+                // Endpoints report what their own data says; the log queries report what the API did,
+                // which is the only way a request that died before writing anything is ever seen.
+                var logQueries = scope.ServiceProvider.GetRequiredService<ILogQueryPoller>();
+                polls.AddRange(await logQueries.RunAll(stoppingToken));
 
                 foreach (var skipped in polls.Where(p => !p.Recorded))
                 {
